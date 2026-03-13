@@ -1,0 +1,41 @@
+services:
+  # Backend service (NestJS)
+  - type: web
+    name: visascore-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: visascore-secrets
+
+  # Frontend service (Next.js)
+  - type: web
+    name: visascore-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - fromGroup: visascore-secrets
+
+envVarGroups:
+  - name: visascore-secrets
+    envVars:
+      - key: SUPABASE_URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_ANON_KEY
+      - key: WOMPI_PUBLIC_KEY
+      - key: WOMPI_PRIVATE_KEY
+      - key: WOMPI_EVENTS_SECRET
+      - key: RESEND_API_KEY
+      - key: APP_URL
+      - key: API_URL
