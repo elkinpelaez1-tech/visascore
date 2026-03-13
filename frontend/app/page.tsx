@@ -8,18 +8,23 @@ import LegalNotice from "./components/LegalNotice";
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="px-4 lg:px-8 h-20 flex items-center relative glass sticky top-0 z-50">
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <header className="px-4 lg:px-8 h-20 grid grid-cols-1 sm:grid-cols-3 items-center glass sticky top-0 z-50">
+        {/* Spacer for 3-column balance on desktop */}
+        <div className="hidden sm:block"></div>
+
+        {/* Centered Logo */}
+        <div className="flex justify-center">
           <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
             <img 
               src="/VisaScore Transparente.png" 
               alt="VisaScore Logo" 
-              className="h-10 md:h-12 w-auto"
+              className="h-16 md:h-24 lg:h-28 w-auto object-contain"
             />
           </Link>
         </div>
 
-        <nav className="ml-auto items-center hidden sm:flex gap-4 lg:gap-8">
+        {/* Right Navigation */}
+        <nav className="justify-end items-center hidden sm:flex gap-4 lg:gap-8">
           <Link className="text-sm font-bold text-slate-500 hover:text-usa-blue transition-colors uppercase tracking-widest hidden lg:block" href="#how-it-works">
             Cómo funciona
           </Link>

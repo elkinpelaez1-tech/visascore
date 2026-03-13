@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CreditCard, ShieldCheck, CheckCircle2, Lock, ArrowRight, Star } from "lucide-react";
 import { motion } from "framer-motion";
@@ -8,7 +8,7 @@ import Link from "next/link";
 import ProfessionalAdvisory from "../components/ProfessionalAdvisory";
 import LegalNotice from "../components/LegalNotice";
 
-export default function PaywallPage() {
+function PaywallContent() {
   const searchParams = useSearchParams();
   const testId = searchParams.get("id");
   const [isLoading, setIsLoading] = useState(false);
@@ -176,5 +176,13 @@ export default function PaywallPage() {
         ← Volver al inicio
       </Link>
     </div>
+  );
+}
+
+export default function PaywallPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-usa-blue"></div></div>}>
+      <PaywallContent />
+    </Suspense>
   );
 }
