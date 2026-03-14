@@ -14,11 +14,9 @@ export class PaymentsController {
   }
 
   @Post('webhook')
-  async webhook(
-    @Body() body: any, 
-    @Headers('x-event-checksum') signature: string
-  ) {
-    this.logger.log('Wompi webhook received');
-    return this.paymentsService.handleWebhook(body, signature);
+  async webhook(@Body() body: any) {
+    this.logger.log('Webhook Wompi recibido');
+    // Enviamos el body completo al servicio, que extraerá el signature
+    return this.paymentsService.handleWebhook(body);
   }
 }

@@ -26,21 +26,34 @@ export class PaymentsService {
     };
   }
 
-  async handleWebhook(body: any, signature: string) {
-    this.logger.log('Payment webhook received');
+  async handleWebhook(body: any) {
+    this.logger.log('Webhook Wompi recibido, procesando payload');
+    
+    // Extraer firma de la estructura original de Wompi
+    const signature = body.signature?.checksum;
     
     // 1. Validate signature
-    if (!this.isValidWompiSignature(body, signature)) {
-      this.logger.warn('Invalid Wompi signature received');
-      throw new BadRequestException('Invalid signature');
+    if (!signature || !this.isValidWompiSignature(body, signature)) {
+      this.logger.warn('Firma inválida: el webhook no pudo ser verificado');
+      throw new BadRequestException('Firma inválida del evento Wompi');
     }
 
-    const { data: transaction } = body;
+    // 2. Validate Event
+    if (body.event !== 'transaction.updated') {
+      this.logger.log(`Evento ignorado: esperado transaction.updated pero se recibió ${body.event}`);
+      return { received: true, ignored: true };
+    }
+
+    const transaction = body.data?.transaction;
+    if (!transaction) {
+       throw new BadRequestException('Payload incompleto: falta transacción');
+    }
+
     const testId = transaction.reference;
     const status = transaction.status;
 
     if (status === 'APPROVED') {
-      this.logger.log(`Payment APPROVED for test ${testId}`);
+      this.logger.log(`Pago aprobado para el test ID: ${testId}`);
 
       // 2. Idempotency Check: check if already processed
       const { data: existingPayment } = await this.supabase
@@ -91,17 +104,24 @@ export class PaymentsService {
           pdfBuffer
         );
       }
+    } else if (status === 'DECLINED' || status === 'ERROR' || status === 'VOIDED') {
+      this.logger.log(`Pago rechazado o fallido para el test ID: ${testId} con estado: ${status}`);
     } else {
-      this.logger.log(`Payment status for ${testId}: ${status}`);
+      this.logger.log(`Estado de pago ignorado para el test ID: ${testId} - Estado: ${status}`);
     }
 
     return { received: true };
   }
 
   private isValidWompiSignature(body: any, signature: string): boolean {
-    const { data: transaction, timestamp } = body;
-    const secret = process.env.WOMPI_EVENTS_SECRET;
+    const transaction = body.data?.transaction;
+    const timestamp = body.timestamp;
+    const secret = process.env.WOMPI_WEBHOOK_SECRET;
     
+    if (!transaction || !timestamp || !secret) {
+      return false;
+    }
+
     // Wompi uses: sha256(transaction.id + transaction.status + transaction.amount_in_cents + timestamp + secret)
     const rawString = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${secret}`;
     const hash = crypto.SHA256(rawString).toString();
