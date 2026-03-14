@@ -5,12 +5,16 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  {
+  "name": "backend",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
   "scripts": {
-  "build": "npx nest build",
-  "start": "node dist/main",
-  "start:dev": "nest start --watch",
-  "start:prod": "node dist/main"
-},
+    "build": "npx nest build",
+    "start": "node dist/main",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main"
+  },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
