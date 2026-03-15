@@ -21,8 +21,16 @@ export class PaymentsService {
 
   async createPayment(testId: string) {
     this.logger.log(`Initiating payment for test ${testId}`);
+    
+    // Si CHECKOUT_UI_URL es 'https://checkout.wompi.co/l/JPQzWZ', agregamos el '?reference=testId'
+    // Para asegurar que el webhook reciba el testId como 'reference'.
+    let baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/l/JPQzWZ';
+    
+    // Si ya contiene un '?' usamos '&', si no usamos '?'
+    let separator = baseUrl.includes('?') ? '&' : '?';
+    
     return {
-       paymentUrl: `${process.env.CHECKOUT_UI_URL}${testId}`
+       paymentUrl: `${baseUrl}${separator}reference=${testId}`
     };
   }
 

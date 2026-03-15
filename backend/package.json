@@ -6,11 +6,11 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx @nestjs/cli build",
-    "start": "node dist/main",
-    "start:dev": "nest start --watch",
-    "start:prod": "node dist/main"
-  },
+  "build": "node node_modules/@nestjs/cli/bin/nest.js build",
+  "start": "node dist/main",
+  "start:dev": "nest start --watch",
+  "start:prod": "node dist/main"
+},
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",

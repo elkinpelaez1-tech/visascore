@@ -16,14 +16,42 @@ function PaywallContent() {
   useEffect(() => {
     console.log('[Analytics] paywall_viewed', { testId });
   }, [testId]);
-
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    if (!testId) {
+      console.error('No testId provided for payment');
+      return;
+    }
+    
     setIsLoading(true);
     console.log('[Analytics] payment_initiated', { testId });
-    setTimeout(() => {
-      window.alert("Redirigiendo a pasarela segura de Wompi...");
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/payments/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ testId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.paymentUrl) {
+        // Redirige a la URL de pago dinámica en la misma pestaña
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error('No payment URL returned from backend');
+      }
+    } catch (error) {
+      console.error('Error initiating payment:', error);
+      alert('Hubo un error al iniciar el pago. Por favor, intenta de nuevo.');
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -132,10 +160,19 @@ function PaywallContent() {
             <button 
               onClick={handlePayment}
               disabled={isLoading}
-              className="w-full bg-usa-blue text-white py-8 rounded-[32px] font-black text-xl shadow-2xl shadow-blue-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 relative overflow-hidden group mb-8"
+              className="w-full bg-usa-blue text-white py-8 rounded-[32px] font-black text-xl shadow-2xl shadow-blue-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 relative overflow-hidden group mb-8 disabled:opacity-80 disabled:cursor-wait"
             >
-              <span className="flex items-center gap-2">Desbloquear mi VisaScore <ArrowRight size={20} /></span>
-              <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest">Pago 100% Seguro</span>
+              {isLoading ? (
+                <span className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  Conectando seguro...
+                </span>
+              ) : (
+                <>
+                  <span className="flex items-center gap-2">Desbloquear mi VisaScore <ArrowRight size={20} /></span>
+                  <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest">Pago 100% Seguro</span>
+                </>
+              )}
             </button>
 
             <div className="space-y-4 mb-4">
