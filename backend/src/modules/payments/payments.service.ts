@@ -29,8 +29,12 @@ export class PaymentsService {
     // Si ya contiene un '?' usamos '&', si no usamos '?'
     let separator = baseUrl.includes('?') ? '&' : '?';
     
+    // La URL a donde Wompi redirigirá al finalizar (con su respectivo ID para cargar el dashboard)
+    const frontendUrl = process.env.FRONTEND_URL || 'https://visascore-two.vercel.app';
+    const redirectUrl = encodeURIComponent(`${frontendUrl}/dashboard?id=${testId}`);
+    
     return {
-       paymentUrl: `${baseUrl}${separator}reference=${testId}`
+       paymentUrl: `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`
     };
   }
 
