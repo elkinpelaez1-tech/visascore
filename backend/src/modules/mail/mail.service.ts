@@ -20,7 +20,7 @@ export class MailService {
             <h2>¡Tu análisis migratorio ya está disponible!</h2>
             <p>Tu VisaScore calculado es: <strong>${score} / 1000</strong></p>
             <p>Puedes ver el análisis detallado y descargar tu reporte en el siguiente enlace:</p>
-            <a href="https://visascore.co/dashboard?id=${testId}" 
+            <a href="https://visascore.co/gracias?id=${testId}" 
                style="background: #003366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 20px 0;">
                Ver mi Dashboard
             </a>
