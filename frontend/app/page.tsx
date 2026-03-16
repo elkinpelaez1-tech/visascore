@@ -8,8 +8,9 @@ import LegalNotice from "./components/LegalNotice";
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <header className="px-4 lg:px-8 h-20 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-50">
-        <div className="flex items-center">
+      <header className="px-4 lg:px-8 h-20 grid grid-cols-2 md:grid-cols-3 items-center border-b border-gray-100 bg-white sticky top-0 z-50">
+        <div className="hidden md:block"></div>
+        <div className="flex justify-start md:justify-center">
           <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
             <img 
               src="/VisaScore Transparente.png" 
@@ -18,12 +19,13 @@ export default function LandingPage() {
             />
           </Link>
         </div>
-        <nav className="flex items-center gap-6">
+        <nav className="flex justify-end items-center gap-6">
           <Link className="text-sm font-semibold text-gray-600 hover:text-[#002868] transition-colors hidden md:block" href="#how-it-works">
             Cómo funciona
           </Link>
           <Link className="text-sm font-semibold bg-[#002868] text-white px-6 py-2.5 rounded-xl hover:bg-[#001f4d] hover:shadow-lg transition-all flex items-center gap-2" href="/test">
-            Calcular mi Score <ArrowRight size={16} />
+            <span className="hidden sm:inline">Calcular mi Score</span>
+            <span className="sm:hidden">Empezar</span> <ArrowRight size={16} />
           </Link>
         </nav>
       </header>
