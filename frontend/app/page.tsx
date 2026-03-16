@@ -213,9 +213,10 @@ export default function LandingPage() {
           </div>
           
           <div className="flex justify-center flex-wrap gap-6 text-sm font-semibold text-gray-500">
+            <Link className="hover:text-[#002868] transition-colors" href="/quienes-somos">Quiénes Somos</Link>
+            <Link className="hover:text-[#002868] transition-colors" href="/faq">Preguntas Frecuentes</Link>
             <Link className="hover:text-[#002868] transition-colors" href="/terminos">Términos y Condiciones</Link>
             <Link className="hover:text-[#002868] transition-colors" href="/privacidad">Política de Privacidad</Link>
-            <Link className="hover:text-[#002868] transition-colors" href="#">Contacto</Link>
           </div>
         </div>
       </footer>
