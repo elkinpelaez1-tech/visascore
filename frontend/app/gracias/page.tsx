@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, Download, Mail, RefreshCw, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -22,7 +22,7 @@ interface ScoreResult {
   recommendations: string[];
 }
 
-export default function GraciasPage() {
+function GraciasContent() {
   const searchParams = useSearchParams();
   const testId = searchParams.get("id");
 
@@ -283,5 +283,18 @@ export default function GraciasPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GraciasPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Cargando datos...</h2>
+      </div>
+    }>
+      <GraciasContent />
+    </Suspense>
   );
 }
