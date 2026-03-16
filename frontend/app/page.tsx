@@ -7,163 +7,214 @@ import LegalNotice from "./components/LegalNotice";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="px-4 lg:px-8 h-20 grid grid-cols-1 sm:grid-cols-3 items-center glass sticky top-0 z-50">
-        {/* Spacer for 3-column balance on desktop */}
-        <div className="hidden sm:block"></div>
-
-        {/* Centered Logo */}
-        <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
+    <div className="flex flex-col min-h-screen bg-white">
+      <header className="px-4 lg:px-8 h-20 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-50">
+        <div className="flex items-center">
+          <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
             <img 
               src="/VisaScore Transparente.png" 
               alt="VisaScore Logo" 
-              className="h-16 md:h-24 lg:h-28 w-auto object-contain"
+              className="h-10 md:h-12 w-auto object-contain"
             />
           </Link>
         </div>
-
-        {/* Right Navigation */}
-        <nav className="justify-end items-center hidden sm:flex gap-4 lg:gap-8">
-          <Link className="text-sm font-bold text-slate-500 hover:text-usa-blue transition-colors uppercase tracking-widest hidden lg:block" href="#how-it-works">
+        <nav className="flex items-center gap-6">
+          <Link className="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors hidden md:block" href="#how-it-works">
             Cómo funciona
           </Link>
-          <Link className="text-sm font-black bg-usa-blue text-white px-6 py-2.5 rounded-full hover:bg-blue-900 hover:shadow-xl hover:shadow-blue-950/20 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/10" href="/test">
-            Calcular mi Score <ArrowRight size={14} />
+          <Link className="text-sm font-semibold bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 hover:shadow-lg transition-all flex items-center gap-2" href="/test">
+            Calcular mi Score <ArrowRight size={16} />
           </Link>
         </nav>
       </header>
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-40 bg-white overflow-hidden relative">
-          <div className="container px-4 md:px-6 relative z-10">
-            <div className="flex flex-col items-center space-y-8 text-center">
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-block rounded-full bg-blue-50 px-4 py-1.5 text-sm font-bold text-usa-blue mb-4 border border-blue-100"
-              >
-                Nueva plataforma de Inteligencia Migratoria ⚡
-              </motion.div>
+        <section className="w-full py-20 md:py-32 relative overflow-hidden bg-white">
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
+            <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-semibold mb-6">
+                <span>🇺🇸</span> VisaScore Análisis Inteligente
+              </span>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                Descubre si te aprobarían la visa americana <span className="text-blue-600">antes de aplicar</span>
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl font-medium">
+                Analizamos tu perfil migratorio y te mostramos tu probabilidad real de aprobación basándonos en los criterios consulares actuales.
+              </p>
               
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-heading max-w-4xl"
-              >
-                Descubre si te aprobarían la <span className="text-usa-blue relative">visa americana<span className="absolute bottom-1 left-0 w-full h-3 bg-usa-red/10 -z-10"></span></span> antes de aplicar
-              </motion.h1>
-
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mx-auto max-w-[800px] text-slate-500 md:text-xl/relaxed lg:text-2xl/relaxed mt-6 font-medium"
-              >
-                Analizamos tu perfil migratorio basado en el formulario DS-160 y calculamos tu probabilidad real de aprobación con algoritmos avanzados.
-              </motion.p>
-
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="flex flex-col items-center gap-6 mt-8"
-              >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-2xl bg-usa-blue px-10 py-4 text-xl font-bold text-white shadow-2xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all">
-                    Calcular mi VisaScore
-                  </Link>
-                  <Link href="#how-it-works" className="inline-flex h-14 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-10 py-4 text-xl font-bold shadow-sm hover:bg-slate-50 transition-all text-slate-700">
-                    Ver cómo funciona
-                  </Link>
-                </div>
-
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
-                  Este análisis es orientativo y no garantiza la aprobación de la visa.
-                </p>
-
-                {/* Trust Badges */}
-                <div className="flex flex-wrap justify-center gap-6 md:gap-12 mt-4">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Clock size={18} className="text-usa-blue" />
-                    <span className="text-sm font-bold">Evaluación en 2 min</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Users size={18} className="text-usa-blue" />
-                    <span className="text-sm font-bold">+1000 perfiles analizados</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <FileText size={18} className="text-usa-blue" />
-                    <span className="text-sm font-bold">Reporte PDF Pro</span>
-                  </div>
-                </div>
-              </motion.div>
+              <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-blue-600 px-10 text-lg font-semibold text-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all mb-8">
+                Calcular mi VisaScore
+              </Link>
+              
+              <div className="flex flex-wrap justify-center items-center gap-6 text-sm font-medium text-gray-500">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-500" /> <span>Basado en DS160</span></div>
+                <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-blue-500" /> <span>Análisis migratorio</span></div>
+                <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-400" /> <span>Recomendaciones reales</span></div>
+              </div>
             </div>
           </div>
-          
-          {/* Background Decorative Elements */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-50/50 rounded-full blur-3xl -z-10" />
+          <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-blue-50/50 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[600px] h-[600px] bg-red-50/30 rounded-full blur-3xl -z-10" />
         </section>
 
-        {/* Features Section */}
-        <section id="how-it-works" className="w-full py-20 md:py-32 bg-slate-50">
-          <div className="container px-4 md:px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold font-heading md:text-4xl mb-4">¿Por qué usar VisaScore?</h2>
-              <p className="text-slate-500 max-w-2xl mx-auto">La mayoría de las negaciones de visa ocurren por errores que podrían haberse identificado antes de la entrevista.</p>
-            </div>
-            
-            <div className="grid gap-8 lg:grid-cols-3">
+        {/* Sección de Confianza */}
+        <section className="w-full py-20 bg-gray-50 border-y border-gray-100">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
-                { icon: TrendingUp, color: 'blue', title: 'Scoring Algorítmico', desc: 'Damos un puntaje de 0 a 1000 basado en los criterios de evaluación de los oficiales consulares.' },
-                { icon: ShieldCheck, color: 'red', title: 'Detección de Riesgos', desc: 'Identificamos señales de alerta en tu perfil DS-160 que podrían causar una negación inmediata.' },
-                { icon: BarChart3, color: 'slate', title: 'Simulador Pro', desc: 'Descubre exactamente cuánto subiría tu score si viajas a Europa o adquieres una propiedad.' }
-              ].map((feature, i) => (
-                <motion.div 
-                  key={i}
-                  whileHover={{ y: -5 }}
-                  className="flex flex-col items-center space-y-4 text-center p-8 rounded-[32px] bg-white shadow-xl shadow-slate-200/50 border border-slate-100 transition-all"
-                >
-                  <div className={`p-4 bg-${feature.color}-50 rounded-2xl`}>
-                    <feature.icon className={`w-8 h-8 text-${feature.color === 'blue' ? 'usa-blue' : feature.color === 'red' ? 'usa-red' : 'slate-700'}`} />
+                { title: 'Análisis DS160', desc: 'Evaluamos los factores migratorios clave que los cónsules revisan.', icon: FileText, color: 'blue' },
+                { title: 'Riesgo migratorio', desc: 'Detectamos debilidades en tu perfil que podrían causar una negación.', icon: ShieldCheck, color: 'red' },
+                { title: 'Reporte personalizado', desc: 'Recibe recomendaciones claras para mejorar tu entrevista.', icon: BarChart3, color: 'blue' }
+              ].map((item, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-8 border border-gray-100 flex flex-col items-center text-center">
+                  <div className={`p-4 rounded-full bg-${item.color}-50 text-${item.color}-600 mb-4`}>
+                    <item.icon size={28} />
                   </div>
-                  <h3 className="text-xl font-bold font-heading">{feature.title}</h3>
-                  <p className="text-slate-500 font-medium">{feature.desc}</p>
-                </motion.div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">{item.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+                </div>
               ))}
             </div>
           </div>
         </section>
+
+        {/* Cómo Funciona */}
+        <section id="how-it-works" className="w-full py-24 bg-white">
+          <div className="container mx-auto px-4 md:px-6 max-w-5xl">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">¿Cómo funciona?</h2>
+              <p className="text-gray-600 text-lg">Un proceso simple y rápido para salir de dudas.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {[
+                { step: '1', title: 'Responde el test', desc: 'Comienza nuestro formulario inteligente de toma menos de 3 minutos.', icon: Clock },
+                { step: '2', title: 'Analizamos tu perfil', desc: 'Nuestro algoritmo evalúa riesgos y cruza datos con las políticas consulares.', icon: Zap },
+                { step: '3', title: 'Obtén tu VisaScore', desc: 'Descubre tu probabilidad real de aprobación y qué debes mejorar.', icon: TrendingUp }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center text-center relative">
+                  {i !== 2 && <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-[2px] bg-gray-100 z-0"></div>}
+                  <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600 mb-6 relative z-10 shadow-sm">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-gray-500 font-medium">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* RESULTADO (MOCKUP) - High Conversion Section */}
+        <section className="w-full py-24 bg-gray-50 flex items-center justify-center px-4">
+          <div className="max-w-2xl w-full">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Lo que obtienes al instante</h2>
+              <p className="text-gray-600">Un diagnóstico exacto de tu perfil migratorio, justo como lo vería un agente.</p>
+            </div>
+            
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+              <div className="bg-[#050B14] p-6 text-white flex justify-between items-center">
+                <span className="font-bold text-lg tracking-wide">VisaScore</span>
+                <span className="text-sm bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Ejemplo de Reporte</span>
+              </div>
+              <div className="p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between border-b border-gray-100 pb-8 mb-8 gap-8">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Tu Score</p>
+                    <div className="text-6xl font-black text-blue-600">78<span className="text-2xl text-gray-400">/100</span></div>
+                  </div>
+                  <div className="flex-1 w-full flex flex-col items-center">
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Probabilidad</p>
+                    <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+                      <div className="bg-green-500 h-4 rounded-full w-[78%]"></div>
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">Alta</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Fortalezas principales</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start text-sm text-gray-600"><CheckCircle2 className="w-5 h-5 text-green-500 mr-2 shrink-0" /> Viajes previos registrados</li>
+                      <li className="flex items-start text-sm text-gray-600"><CheckCircle2 className="w-5 h-5 text-green-500 mr-2 shrink-0" /> Estabilidad laboral prolongada</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center"><span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span> Áreas de Riesgo</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start text-sm text-gray-600"><ShieldCheck className="w-5 h-5 text-yellow-500 mr-2 shrink-0" /> Duración de viaje planificada elevada</li>
+                      <li className="flex items-start text-sm text-gray-600"><ShieldCheck className="w-5 h-5 text-yellow-500 mr-2 shrink-0" /> Contactos en EE.UU sin especificar</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Who Should Use It */}
+        <section className="w-full py-20 bg-white">
+          <div className="container mx-auto px-4 md:px-6">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">¿Para quién es VisaScore?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+                <span className="text-4xl mb-4 block">✈️</span>
+                <h3 className="font-bold text-gray-900 mb-2">Turismo y Compras</h3>
+                <p className="text-sm text-gray-600">Asegura que tu perfil de turista sea creíble y sin banderas rojas.</p>
+              </div>
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+                <span className="text-4xl mb-4 block">🎓</span>
+                <h3 className="font-bold text-gray-900 mb-2">Estudiantes</h3>
+                <p className="text-sm text-gray-600">Demuestra lazos fuertes y minimiza la sospecha de inmigración.</p>
+              </div>
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+                <span className="text-4xl mb-4 block">👨‍👩‍👧‍👦</span>
+                <h3 className="font-bold text-gray-900 mb-2">Visitas Familiares</h3>
+                <p className="text-sm text-gray-600">Evita negaciones por exceso de familiares residentes en EE.UU.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="w-full py-24 bg-blue-600 text-white text-center">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Descubre tu VisaScore en menos de 3 minutos</h2>
+            <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
+              No dejes tu aplicación al azar. Conoce exactamente cómo te ve el cónsul y aplica con seguridad.
+            </p>
+            <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-blue-600 shadow-xl hover:bg-gray-50 hover:scale-105 transition-all">
+              Comenzar evaluación gratuita
+            </Link>
+          </div>
+        </section>
       </main>
 
-      <footer className="py-12 border-t bg-white">
-        <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+      <footer className="py-12 border-t border-gray-100 bg-white">
+        <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col items-center md:items-start gap-2">
             <img 
               src="/VisaScore Transparente.png" 
               alt="VisaScore Logo" 
-              className="h-8 w-auto mb-2"
+              className="h-8 w-auto mb-2 opacity-80"
             />
-            <p className="text-sm text-slate-400 max-w-xs text-center md:text-left">
-              Potenciando perfiles migratorio con inteligencia de datos.
+            <p className="text-sm text-gray-400 max-w-xs text-center md:text-left">
+              Inteligencia de datos para aplicaciones consulares.
             </p>
           </div>
           
-          <div className="w-full max-w-4xl mx-auto my-12">
+          <div className="w-full max-w-4xl mx-auto my-8">
             <LegalNotice />
           </div>
           
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-bold text-slate-600">
-            <Link className="hover:text-usa-blue transition-colors" href="#">Términos</Link>
-            <Link className="hover:text-usa-blue transition-colors" href="#">Privacidad</Link>
-            <Link className="hover:text-usa-blue transition-colors" href="#">Contacto</Link>
+          <div className="flex justify-center gap-6 text-sm font-semibold text-gray-500">
+            <Link className="hover:text-blue-600 transition-colors" href="#">Términos</Link>
+            <Link className="hover:text-blue-600 transition-colors" href="#">Privacidad</Link>
+            <Link className="hover:text-blue-600 transition-colors" href="#">Contacto</Link>
           </div>
-          
-          <p className="text-[10px] text-slate-400 text-center md:text-right max-w-[200px]">
-            © 2026 VisaScore. No afiliado al gobierno de los EE.UU.
-          </p>
         </div>
       </footer>
     </div>
