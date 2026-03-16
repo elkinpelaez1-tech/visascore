@@ -6,8 +6,21 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "VisaScore | ¿Te aprobarían la visa americana?",
-  description: "Calcula tu probabilidad de aprobación de visa americana en el portal líder de scoring migratorio.",
+  title: "VisaScore | Calcula tu probabilidad de aprobación de la visa americana",
+  description: "Descubre tu probabilidad de aprobación de la visa americana antes de aplicar. Analizamos tu perfil migratorio, tu DS-160 y generamos un VisaScore con fortalezas, riesgos y recomendaciones.",
+  keywords: "Tramite de visa americana, visa americana, como tramitar la visa, probabilidad visa americana, analisis ds160, visa b1 b2 aprobacion, evaluar visa americana, riesgo migratorio visa, test visa americana",
+  openGraph: {
+    title: "VisaScore",
+    description: "Calcula tu probabilidad de aprobación de la visa americana",
+    images: ["/logo.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+  alternates: {
+    canonical: "https://www.visascore.info",
+  },
   manifest: "/manifest.json",
   themeColor: "#003366",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1",

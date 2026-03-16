@@ -188,7 +188,7 @@ export default function TestPage() {
         {/* Custom Progress Bar */}
         <div className="w-full h-2 bg-slate-200 rounded-full mb-10 overflow-hidden">
           <motion.div 
-            className="h-full bg-blue-600 rounded-full" 
+            className="h-full bg-[#002868] rounded-full" 
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ type: "spring", stiffness: 50, damping: 20 }}
@@ -208,23 +208,22 @@ export default function TestPage() {
             <div className="flex-1">
               {/* Section Header */}
               <div className="mb-6">
-                 <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                 <div className="inline-flex items-center gap-2 text-sm font-semibold text-[#002868] bg-blue-50 px-3 py-1 rounded-full">
                     {/* Icon depending on category */}
-                    {currentQuestion.category === "Personal" && <span className="bg-blue-100 text-blue-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
-                    {currentQuestion.category === "Económico" && <span className="bg-green-100 text-green-600 p-1.5 rounded-lg"><Clock size={18} /></span>}
-                    {currentQuestion.category === "Arraigo" && <span className="bg-amber-100 text-amber-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
-                    {currentQuestion.category === "Viajes" && <span className="bg-cyan-100 text-cyan-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
-                    {currentQuestion.category === "Migratorio" && <span className="bg-purple-100 text-purple-600 p-1.5 rounded-lg"><Clock size={18} /></span>}
-                    {currentQuestion.category === "Viaje" && <span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
-                    {currentQuestion.category === "Redes Sociales" && <span className="bg-pink-100 text-pink-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
-                    {currentQuestion.category === "Seguridad y Salud" && <span className="bg-red-100 text-red-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
+                    {currentQuestion.category === "Personal" && <CheckCircle2 size={16} />}
+                    {currentQuestion.category === "Económico" && <Clock size={16} />}
+                    {currentQuestion.category === "Arraigo" && <ShieldCheck size={16} />}
+                    {currentQuestion.category === "Viajes" && <CheckCircle2 size={16} />}
+                    {currentQuestion.category === "Migratorio" && <Clock size={16} />}
+                    {currentQuestion.category === "Viaje" && <ShieldCheck size={16} />}
+                    {currentQuestion.category === "Redes Sociales" && <CheckCircle2 size={16} />}
+                    {currentQuestion.category === "Seguridad y Salud" && <ShieldCheck size={16} />}
                     {currentQuestion.category}
-                 </h3>
-                 <div className="w-full h-px bg-slate-200 mt-4"></div>
+                 </div>
               </div>
 
               {/* Question Card */}
-              <div className="bg-white rounded-xl p-6 md:p-8 shadow-md border border-slate-200 transition-all duration-200 hover:shadow-lg mb-8">
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 transition-all duration-200 mb-8">
                 <h2 className="text-lg md:text-xl font-medium mb-6 text-slate-800 leading-relaxed">
                   {currentQuestion.label}
                 </h2>
@@ -269,7 +268,7 @@ export default function TestPage() {
                       type={currentQuestion.type}
                       value={formData[currentQuestion.id] || ''}
                       onChange={(e) => updateField(currentQuestion.type === "number" ? Number(e.target.value) : e.target.value)}
-                      className="w-full p-5 rounded-xl border-2 border-slate-200 bg-white focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 text-lg font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#002868] focus:border-[#002868] transition outline-none text-lg font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal"
                       placeholder="Escribe tu respuesta..."
                       autoFocus
                     />
@@ -289,7 +288,7 @@ export default function TestPage() {
               <button 
                 onClick={handleNext}
                 disabled={formData[currentQuestion.id] === undefined || loading}
-                className="flex items-center gap-2 bg-usa-blue text-white px-8 py-4 rounded-xl font-medium text-base shadow-lg shadow-blue-900/20 hover:bg-blue-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-usa-blue disabled:hover:scale-100 disabled:active:scale-100"
+                className="flex items-center gap-2 bg-[#002868] hover:bg-[#001f4d] text-white px-8 py-3 rounded-xl shadow-md font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#002868]"
               >
                 {loading ? "Procesando..." : step === QUESTIONS.length - 1 ? "Completar Evaluación" : "Continuar"}
                 {!loading && <ChevronRight size={20} />}

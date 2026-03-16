@@ -8,8 +8,9 @@ import LegalNotice from "./components/LegalNotice";
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <header className="px-4 lg:px-8 h-20 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-50">
-        <div className="flex items-center">
+      <header className="px-4 lg:px-8 h-20 grid grid-cols-2 md:grid-cols-3 items-center border-b border-gray-100 bg-white sticky top-0 z-50">
+        <div className="hidden md:block"></div>
+        <div className="flex justify-start md:justify-center">
           <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
             <img 
               src="/VisaScore Transparente.png" 
@@ -18,12 +19,13 @@ export default function LandingPage() {
             />
           </Link>
         </div>
-        <nav className="flex items-center gap-6">
-          <Link className="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors hidden md:block" href="#how-it-works">
+        <nav className="flex justify-end items-center gap-6">
+          <Link className="text-sm font-semibold text-gray-600 hover:text-[#002868] transition-colors hidden md:block" href="#how-it-works">
             Cómo funciona
           </Link>
-          <Link className="text-sm font-semibold bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 hover:shadow-lg transition-all flex items-center gap-2" href="/test">
-            Calcular mi Score <ArrowRight size={16} />
+          <Link className="text-sm font-semibold bg-[#002868] text-white px-6 py-2.5 rounded-xl hover:bg-[#001f4d] hover:shadow-lg transition-all flex items-center gap-2" href="/test">
+            <span className="hidden sm:inline">Calcular mi Score</span>
+            <span className="sm:hidden">Empezar</span> <ArrowRight size={16} />
           </Link>
         </nav>
       </header>
@@ -33,29 +35,29 @@ export default function LandingPage() {
         <section className="w-full py-20 md:py-32 relative overflow-hidden bg-white">
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-semibold mb-6">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#002868] text-sm font-semibold mb-6">
                 <span>🇺🇸</span> VisaScore Análisis Inteligente
               </span>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Descubre si te aprobarían la visa americana <span className="text-blue-600">antes de aplicar</span>
+                Descubre si te aprobarían la visa americana <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#002868] to-blue-500">antes de aplicar</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl font-medium">
                 Analizamos tu perfil migratorio y te mostramos tu probabilidad real de aprobación basándonos en los criterios consulares actuales.
               </p>
               
-              <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-blue-600 px-10 text-lg font-semibold text-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all mb-8">
+              <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-[#002868] px-10 text-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-[#001f4d] transition-all mb-8">
                 Calcular mi VisaScore
               </Link>
               
               <div className="flex flex-wrap justify-center items-center gap-6 text-sm font-medium text-gray-500">
                 <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-500" /> <span>Basado en DS160</span></div>
-                <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-blue-500" /> <span>Análisis migratorio</span></div>
-                <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-400" /> <span>Recomendaciones reales</span></div>
+                <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-[#002868]" /> <span>Análisis migratorio</span></div>
+                <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-500" /> <span>Recomendaciones reales</span></div>
               </div>
             </div>
           </div>
-          <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-blue-50/50 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[600px] h-[600px] bg-red-50/30 rounded-full blur-3xl -z-10" />
+          <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-gradient-to-bl from-[#002868] to-blue-500 opacity-20 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[600px] h-[600px] bg-red-500/10 rounded-full blur-3xl -z-10" />
         </section>
 
         {/* Sección de Confianza */}
@@ -63,12 +65,12 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
-                { title: 'Análisis DS160', desc: 'Evaluamos los factores migratorios clave que los cónsules revisan.', icon: FileText, color: 'blue' },
-                { title: 'Riesgo migratorio', desc: 'Detectamos debilidades en tu perfil que podrían causar una negación.', icon: ShieldCheck, color: 'red' },
-                { title: 'Reporte personalizado', desc: 'Recibe recomendaciones claras para mejorar tu entrevista.', icon: BarChart3, color: 'blue' }
+                { title: 'Análisis DS160', desc: 'Evaluamos los factores migratorios clave que los cónsules revisan.', icon: FileText },
+                { title: 'Riesgo migratorio', desc: 'Detectamos debilidades en tu perfil que podrían causar una negación.', icon: ShieldCheck },
+                { title: 'Reporte personalizado', desc: 'Recibe recomendaciones claras para mejorar tu entrevista.', icon: BarChart3 }
               ].map((item, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-8 border border-gray-100 flex flex-col items-center text-center">
-                  <div className={`p-4 rounded-full bg-${item.color}-50 text-${item.color}-600 mb-4`}>
+                <div key={i} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-8 border border-gray-100 border-t-4 border-t-[#002868] flex flex-col items-center text-center">
+                  <div className="p-4 rounded-full bg-blue-50 text-[#002868] mb-4">
                     <item.icon size={28} />
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">{item.title}</h3>
@@ -95,7 +97,7 @@ export default function LandingPage() {
               ].map((item, i) => (
                 <div key={i} className="flex flex-col items-center text-center relative">
                   {i !== 2 && <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-[2px] bg-gray-100 z-0"></div>}
-                  <div className="w-16 h-16 bg-white border-2 border-blue-600 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600 mb-6 relative z-10 shadow-sm">
+                  <div className="w-16 h-16 bg-white border-2 border-[#002868] rounded-full flex items-center justify-center text-2xl font-bold text-[#002868] mb-6 relative z-10 shadow-sm">
                     {item.step}
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
@@ -115,15 +117,15 @@ export default function LandingPage() {
             </div>
             
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-              <div className="bg-[#050B14] p-6 text-white flex justify-between items-center">
+              <div className="bg-[#050B14] p-6 text-white flex justify-between items-center border-b-[6px] border-[#002868]">
                 <span className="font-bold text-lg tracking-wide">VisaScore</span>
-                <span className="text-sm bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Ejemplo de Reporte</span>
+                <span className="text-sm bg-[#002868]/30 text-blue-200 px-3 py-1 rounded-full border border-blue-400/30">Ejemplo de Reporte</span>
               </div>
               <div className="p-8">
                 <div className="flex flex-col md:flex-row items-center justify-between border-b border-gray-100 pb-8 mb-8 gap-8">
                   <div className="text-center">
                     <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Tu Score</p>
-                    <div className="text-6xl font-black text-blue-600">78<span className="text-2xl text-gray-400">/100</span></div>
+                    <div className="text-6xl font-black text-[#002868]">78<span className="text-2xl text-gray-400">/100</span></div>
                   </div>
                   <div className="flex-1 w-full flex flex-col items-center">
                     <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Probabilidad</p>
@@ -180,13 +182,13 @@ export default function LandingPage() {
         </section>
 
         {/* Final CTA */}
-        <section className="w-full py-24 bg-blue-600 text-white text-center">
+        <section className="w-full py-24 bg-[#002868] text-white text-center">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Descubre tu VisaScore en menos de 3 minutos</h2>
             <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
               No dejes tu aplicación al azar. Conoce exactamente cómo te ve el cónsul y aplica con seguridad.
             </p>
-            <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-blue-600 shadow-xl hover:bg-gray-50 hover:scale-105 transition-all">
+            <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-[#002868] shadow-xl hover:bg-gray-50 hover:scale-105 transition-all">
               Comenzar evaluación gratuita
             </Link>
           </div>
@@ -210,10 +212,11 @@ export default function LandingPage() {
             <LegalNotice />
           </div>
           
-          <div className="flex justify-center gap-6 text-sm font-semibold text-gray-500">
-            <Link className="hover:text-blue-600 transition-colors" href="#">Términos</Link>
-            <Link className="hover:text-blue-600 transition-colors" href="#">Privacidad</Link>
-            <Link className="hover:text-blue-600 transition-colors" href="#">Contacto</Link>
+          <div className="flex justify-center flex-wrap gap-6 text-sm font-semibold text-gray-500">
+            <Link className="hover:text-[#002868] transition-colors" href="/quienes-somos">Quiénes Somos</Link>
+            <Link className="hover:text-[#002868] transition-colors" href="/faq">Preguntas Frecuentes</Link>
+            <Link className="hover:text-[#002868] transition-colors" href="/terminos">Términos y Condiciones</Link>
+            <Link className="hover:text-[#002868] transition-colors" href="/privacidad">Política de Privacidad</Link>
           </div>
         </div>
       </footer>
