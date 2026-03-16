@@ -36,6 +36,23 @@ const QUESTIONS: Question[] = [
   { id: "familyInUs", label: "¿Tienes familiares directos viviendo en Estados Unidos?", type: "boolean", category: "Migratorio" },
   { id: "hasOverstayHistory", label: "¿Te has quedado más tiempo del permitido en algún país?", type: "boolean", category: "Migratorio" },
   { id: "travelPurpose", label: "Motivo principal de tu viaje", type: "select", options: ["Turismo", "Negocios", "Tratamiento Médico", "Visita Familiar"], category: "Migratorio" },
+  
+  // Nuevas preguntas de Viaje
+  { id: "tripPayer", label: "¿Quién va a pagar por su viaje?", type: "select", options: ["Yo mismo", "Familiar en mi país", "Familiar en EE.UU.", "Mi empresa", "Otro"], category: "Viaje" },
+  { id: "intendedCities", label: "¿Qué ciudades quiere conocer en los Estados Unidos?", type: "text", category: "Viaje" },
+  { id: "intendedDurationDays", label: "¿Cuánto tiempo quiere quedarse en Estados Unidos? (en días)", type: "number", category: "Viaje" },
+  { id: "countriesVisited", label: "¿Cuáles países conoce?", type: "text", category: "Viaje" },
+
+  // Redes Sociales
+  { id: "socialMediaPlatforms", label: "¿Cuáles redes sociales tiene?", type: "text", category: "Redes Sociales" },
+  { id: "allowsSocialMediaCheck", label: "¿Permite que la Embajada investigue sus redes sociales?", type: "boolean", category: "Redes Sociales" },
+
+  // Seguridad y Salud
+  { id: "hasCommunicableDisease", label: "¿Tiene usted alguna enfermedad transmisible de importancia para la salud pública?", type: "boolean", category: "Seguridad y Salud" },
+  { id: "hasMentalPhysicalDisorder", label: "¿Tiene usted algún trastorno mental o físico?", type: "boolean", category: "Seguridad y Salud" },
+  { id: "hasDrugAddiction", label: "¿Es o ha sido usted abusador o adicto a drogas?", type: "boolean", category: "Seguridad y Salud" },
+  { id: "hasCriminalRecord", label: "¿Ha sido arrestado o condenado por algún delito o crimen?", type: "boolean", category: "Seguridad y Salud" },
+  { id: "hasDeportationHistory", label: "¿Ha sido deportado o removido de Estados Unidos?", type: "boolean", category: "Seguridad y Salud" },
 ];
 
 function LoadingStep({ label, delay }: { label: string, delay: number }) {
@@ -109,12 +126,12 @@ export default function TestPage() {
 
   if (isCapping) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center font-sans">
-        <div className="max-w-md w-full">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-center font-sans">
+        <div className="max-w-2xl w-full">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-24 h-24 bg-usa-blue rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-blue-500/20 relative"
+            className="w-24 h-24 bg-blue-600 rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-2xl relative"
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -134,12 +151,12 @@ export default function TestPage() {
             <LoadingStep label="VisaScore calculado" delay={2.5} />
           </div>
 
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: '100%' }}
               transition={{ duration: 3.5 }}
-              className="h-full bg-usa-blue"
+              className="h-full bg-blue-600"
             />
           </div>
           <p className="text-[10px] text-slate-400 mt-4 font-bold uppercase tracking-widest">
@@ -151,27 +168,27 @@ export default function TestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center py-12 px-4 md:py-20">
-      <div className="max-w-2xl w-full">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-3xl w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-10">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <img 
               src="/VisaScore Transparente.png" 
               alt="VisaScore Logo" 
               className="h-8 w-auto"
             />
           </Link>
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
-             <Clock size={16} className="text-usa-blue" />
-             <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Pregunta {step + 1}/{QUESTIONS.length}</span>
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-slate-600">
+             <Clock size={16} />
+             <span className="text-sm font-semibold tracking-wide">Pregunta {step + 1} de {QUESTIONS.length}</span>
           </div>
         </div>
 
         {/* Custom Progress Bar */}
-        <div className="w-full h-2.5 bg-slate-200 rounded-full mb-16 overflow-hidden shadow-inner">
+        <div className="w-full h-2 bg-slate-200 rounded-full mb-10 overflow-hidden">
           <motion.div 
-            className="h-full bg-usa-blue shadow-[0_0_12px_rgba(0,51,102,0.4)]" 
+            className="h-full bg-blue-600 rounded-full" 
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ type: "spring", stiffness: 50, damping: 20 }}
@@ -182,83 +199,100 @@ export default function TestPage() {
         <AnimatePresence mode="wait">
           <motion.div 
             key={step}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="bg-white rounded-[40px] p-8 md:p-14 shadow-2xl shadow-slate-200/60 border border-white mb-10 min-h-[500px] flex flex-col relative"
+            className="w-full flex flex-col relative"
           >
             <div className="flex-1">
-              <span className="text-usa-blue font-black text-[10px] uppercase tracking-[0.3em] mb-4 block opacity-60">
-                Categoría: {currentQuestion.category}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-black font-heading mb-12 text-slate-900 leading-[1.1]">
-                {currentQuestion.label}
-              </h2>
+              {/* Section Header */}
+              <div className="mb-6">
+                 <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                    {/* Icon depending on category */}
+                    {currentQuestion.category === "Personal" && <span className="bg-blue-100 text-blue-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
+                    {currentQuestion.category === "Económico" && <span className="bg-green-100 text-green-600 p-1.5 rounded-lg"><Clock size={18} /></span>}
+                    {currentQuestion.category === "Arraigo" && <span className="bg-amber-100 text-amber-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
+                    {currentQuestion.category === "Viajes" && <span className="bg-cyan-100 text-cyan-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
+                    {currentQuestion.category === "Migratorio" && <span className="bg-purple-100 text-purple-600 p-1.5 rounded-lg"><Clock size={18} /></span>}
+                    {currentQuestion.category === "Viaje" && <span className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
+                    {currentQuestion.category === "Redes Sociales" && <span className="bg-pink-100 text-pink-600 p-1.5 rounded-lg"><CheckCircle2 size={18} /></span>}
+                    {currentQuestion.category === "Seguridad y Salud" && <span className="bg-red-100 text-red-600 p-1.5 rounded-lg"><ShieldCheck size={18} /></span>}
+                    {currentQuestion.category}
+                 </h3>
+                 <div className="w-full h-px bg-slate-200 mt-4"></div>
+              </div>
 
-              <div className="space-y-4">
-                {currentQuestion.type === "boolean" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => updateField(true)}
-                      className={`p-8 rounded-[24px] border-2 font-black text-xl transition-all flex items-center justify-between px-10 ${formData[currentQuestion.id] === true ? 'border-usa-blue bg-blue-50 text-usa-blue shadow-lg shadow-blue-500/10' : 'border-slate-50 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'}`}
-                    >
-                      SÍ <CheckCircle2 size={24} className={formData[currentQuestion.id] === true ? 'opacity-100' : 'opacity-0'} />
-                    </button>
-                    <button 
-                      onClick={() => updateField(false)}
-                      className={`p-8 rounded-[24px] border-2 font-black text-xl transition-all flex items-center justify-between px-10 ${formData[currentQuestion.id] === false ? 'border-usa-blue bg-blue-50 text-usa-blue shadow-lg shadow-blue-500/10' : 'border-slate-50 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'}`}
-                    >
-                      NO <CheckCircle2 size={24} className={formData[currentQuestion.id] === false ? 'opacity-100' : 'opacity-0'} />
-                    </button>
-                  </div>
-                )}
+              {/* Question Card */}
+              <div className="bg-white rounded-xl p-6 md:p-8 shadow-md border border-slate-200 transition-all duration-200 hover:shadow-lg mb-8">
+                <h2 className="text-lg md:text-xl font-medium mb-6 text-slate-800 leading-relaxed">
+                  {currentQuestion.label}
+                </h2>
 
-                {currentQuestion.type === "select" && (
-                  <div className="grid grid-cols-1 gap-3">
-                    {currentQuestion.options?.map((opt) => (
+                <div className="space-y-4">
+                  {currentQuestion.type === "boolean" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <button 
-                        key={opt}
-                        onClick={() => updateField(opt)}
-                        className={`p-5 rounded-[20px] border-2 font-bold text-left transition-all flex items-center justify-between ${formData[currentQuestion.id] === opt ? 'border-usa-blue bg-blue-50 text-usa-blue shadow-lg shadow-blue-500/10' : 'border-slate-50 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'}`}
+                        onClick={() => updateField(true)}
+                        className={`p-6 rounded-xl border-2 font-medium text-lg transition-all duration-200 flex items-center justify-between ${formData[currentQuestion.id] === true ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-300'}`}
                       >
-                        {opt}
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData[currentQuestion.id] === opt ? 'border-usa-blue bg-usa-blue' : 'border-slate-200'}`}>
-                           {formData[currentQuestion.id] === opt && <div className="w-2 h-2 bg-white rounded-full" />}
-                        </div>
+                        SÍ <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${formData[currentQuestion.id] === true ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>{formData[currentQuestion.id] === true && <div className="w-2 h-2 bg-white rounded-full" />}</div>
                       </button>
-                    ))}
-                  </div>
-                )}
+                      <button 
+                        onClick={() => updateField(false)}
+                        className={`p-6 rounded-xl border-2 font-medium text-lg transition-all duration-200 flex items-center justify-between ${formData[currentQuestion.id] === false ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-sm' : 'border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-300'}`}
+                      >
+                        NO <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${formData[currentQuestion.id] === false ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>{formData[currentQuestion.id] === false && <div className="w-2 h-2 bg-white rounded-full" />}</div>
+                      </button>
+                    </div>
+                  )}
 
-                {(currentQuestion.type === "number" || currentQuestion.type === "text") && (
-                  <input 
-                    type={currentQuestion.type}
-                    value={formData[currentQuestion.id] || ''}
-                    onChange={(e) => updateField(currentQuestion.type === "number" ? Number(e.target.value) : e.target.value)}
-                    className="w-full p-6 py-8 rounded-[24px] border-2 border-slate-50 bg-slate-50/50 focus:bg-white focus:border-usa-blue outline-none transition-all text-2xl font-black font-heading placeholder:text-slate-300 shadow-inner"
-                    placeholder="Escribe tu respuesta..."
-                    autoFocus
-                  />
-                )}
+                  {currentQuestion.type === "select" && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {currentQuestion.options?.map((opt) => (
+                        <button 
+                          key={opt}
+                          onClick={() => updateField(opt)}
+                          className={`p-5 rounded-xl border-2 font-medium text-left transition-all duration-200 flex items-center justify-between shadow-sm ${formData[currentQuestion.id] === opt ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-300'}`}
+                        >
+                          {opt}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${formData[currentQuestion.id] === opt ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                             {formData[currentQuestion.id] === opt && <div className="w-2 h-2 bg-white rounded-full" />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {(currentQuestion.type === "number" || currentQuestion.type === "text") && (
+                    <input 
+                      type={currentQuestion.type}
+                      value={formData[currentQuestion.id] || ''}
+                      onChange={(e) => updateField(currentQuestion.type === "number" ? Number(e.target.value) : e.target.value)}
+                      className="w-full p-5 rounded-xl border-2 border-slate-200 bg-white focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 text-lg font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal"
+                      placeholder="Escribe tu respuesta..."
+                      autoFocus
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center mt-12 gap-10">
+            <div className="flex justify-between items-center mt-6">
               <button 
                 onClick={handlePrev}
                 disabled={step === 0}
-                className="flex items-center gap-3 text-slate-400 font-black text-base hover:text-usa-blue disabled:opacity-0 transition-colors uppercase tracking-widest"
+                className="flex items-center gap-2 text-slate-500 font-medium text-sm hover:text-blue-600 disabled:opacity-0 transition-colors py-2 px-4 -ml-4"
               >
-                <ChevronLeft size={24} strokeWidth={3} /> Atrás
+                <ChevronLeft size={20} /> Atrás
               </button>
               <button 
                 onClick={handleNext}
                 disabled={formData[currentQuestion.id] === undefined || loading}
-                className="flex items-center gap-3 bg-usa-blue text-white px-10 py-6 rounded-3xl font-black text-xl shadow-2xl shadow-blue-900/30 hover:scale-105 active:scale-95 transition-all disabled:grayscale disabled:opacity-50"
+                className="flex items-center gap-2 bg-usa-blue text-white px-8 py-4 rounded-xl font-medium text-base shadow-lg shadow-blue-900/20 hover:bg-blue-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-usa-blue disabled:hover:scale-100 disabled:active:scale-100"
               >
-                {loading ? "Calculando..." : step === QUESTIONS.length - 1 ? "Analizar Perfil" : "Siguiente"}
-                {!loading && <ChevronRight size={24} strokeWidth={3} />}
+                {loading ? "Procesando..." : step === QUESTIONS.length - 1 ? "Completar Evaluación" : "Continuar"}
+                {!loading && <ChevronRight size={20} />}
               </button>
             </div>
           </motion.div>

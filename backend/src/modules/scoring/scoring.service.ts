@@ -21,6 +21,17 @@ export interface DS160Profile {
   hasOverstayHistory: boolean;
   familyInUs: boolean;
   travelPurpose: string;
+  hasCommunicableDisease: boolean;
+  hasMentalPhysicalDisorder: boolean;
+  hasDrugAddiction: boolean;
+  hasCriminalRecord: boolean;
+  hasDeportationHistory: boolean;
+  tripPayer: string;
+  socialMediaPlatforms: string;
+  allowsSocialMediaCheck: boolean;
+  intendedCities: string;
+  intendedDurationDays: number;
+  countriesVisited: string;
 }
 
 export interface ScoringResult {
@@ -95,6 +106,12 @@ export class ScoringService {
     else if (p.employmentDurationMonths > 6) score += 50;
 
     if (p.isCompanyRegistered) score += 30;
+    
+    // Trip payer impact
+    const payer = (p.tripPayer || '').toLowerCase();
+    if (payer === 'yo mismo' || payer === 'mi empresa') score += 50;
+    else if (payer === 'familiar en ee.uu.') score -= 50;
+
     return Math.min(250, score);
   }
 
@@ -115,11 +132,31 @@ export class ScoringService {
 
   private calculateMigration(p: DS160Profile): number {
     let score = 150;
+    
+    // Positive points
     if (p.hasPreviousUsVisa) score += 50;
+    
+    // Negative points
     if (p.hasVisaDenial) score -= 200;
     if (p.hasOverstayHistory) score -= 200;
     if (p.familyInUs) score -= 50;
-    return Math.max(0, Math.min(200, score));
+    
+    // Critical inadmissibility red flags (INA 212(a) grounds)
+    if (p.hasCommunicableDisease) score -= 500;
+    if (p.hasMentalPhysicalDisorder) score -= 500;
+    if (p.hasDrugAddiction) score -= 500;
+    if (p.hasCriminalRecord) score -= 500;
+    if (p.hasDeportationHistory) score -= 500;
+    
+    // Additional behavioral risks
+    if (p.intendedDurationDays > 30) score -= 50; // Suspicion of intent to stay/work
+    if (p.allowsSocialMediaCheck === false) score -= 100; // Refusal implies hiding information
+
+    // Minimum possible points mathematically here can be very negative, 
+    // but we bottom out at 0 so the total score doesn't become totally unreasonable
+    // However, if we want the total score to plummet, we should let it be negative
+    // before summing up.
+    return score;
   }
 
   private calculatePersonal(p: DS160Profile): number {
@@ -144,6 +181,17 @@ export class ScoringService {
     if (b.travel < 50) w.push('Falta de historial de viajes fuera del país');
     if (p.hasVisaDenial) w.push('Antecedente de visa negada');
     if (p.familyInUs) w.push('Vínculos familiares en EE.UU. (mayor riesgo migratorio)');
+    
+    // Red flags
+    if (p.hasCommunicableDisease) w.push('ALERTA: Enfermedad transmisible detectada (posible inadmisibilidad sanitaria)');
+    if (p.hasMentalPhysicalDisorder) w.push('ALERTA: Trastorno mental o físico detectado');
+    if (p.hasDrugAddiction) w.push('ALERTA: Historial de adicción a drogas (inadmisibilidad)');
+    if (p.hasCriminalRecord) w.push('ALERTA: Antecedentes penales detectados (fuerte causa de rechazo)');
+    if (p.hasDeportationHistory) w.push('ALERTA: Historial de deportación previa de EE.UU.');
+    
+    if (p.intendedDurationDays > 30) w.push('Duración del viaje planificada excesiva para turismo convencional');
+    if (p.allowsSocialMediaCheck === false) w.push('La negativa a revisión de redes sociales genera gran sospecha consular');
+    
     return w;
   }
 
