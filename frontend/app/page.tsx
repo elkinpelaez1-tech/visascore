@@ -212,9 +212,9 @@ export default function LandingPage() {
             <LegalNotice />
           </div>
           
-          <div className="flex justify-center gap-6 text-sm font-semibold text-gray-500">
-            <Link className="hover:text-[#002868] transition-colors" href="#">Términos</Link>
-            <Link className="hover:text-[#002868] transition-colors" href="#">Privacidad</Link>
+          <div className="flex justify-center flex-wrap gap-6 text-sm font-semibold text-gray-500">
+            <Link className="hover:text-[#002868] transition-colors" href="/terminos">Términos y Condiciones</Link>
+            <Link className="hover:text-[#002868] transition-colors" href="/privacidad">Política de Privacidad</Link>
             <Link className="hover:text-[#002868] transition-colors" href="#">Contacto</Link>
           </div>
         </div>
