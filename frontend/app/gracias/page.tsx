@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, Download, Mail, RefreshCw, XCircle } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-
 interface ScoreResult {
   overall_score: number;
   approval_probability: number;
@@ -149,9 +147,9 @@ export default function GraciasPage() {
         <XCircle className="h-16 w-16 text-red-500 mb-6" />
         <h2 className="text-2xl font-bold text-slate-800 mb-2">Algo salió mal</h2>
         <p className="text-slate-600 mb-6 text-center max-w-md">{error}</p>
-        <Button asChild>
-          <Link href="/">Volver al inicio</Link>
-        </Button>
+        <Link href="/" className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+          Volver al inicio
+        </Link>
       </div>
     );
   }
@@ -244,14 +242,14 @@ export default function GraciasPage() {
               Obtén un informe detallado con todo tu análisis, simulación de mejoras y consejos para la entrevista.
             </p>
           </div>
-          <Button 
+          <button 
             onClick={handleDownloadReport} 
             disabled={downloading}
-            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-6 h-auto text-base"
+            className="w-full md:w-auto flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-4 h-auto text-base font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {downloading ? <RefreshCw className="mr-2 h-5 w-5 py-2 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+            {downloading ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
             {downloading ? "Generando..." : "Descargar Reporte Completo"}
-          </Button>
+          </button>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center max-w-2xl mx-auto">
@@ -269,13 +267,13 @@ export default function GraciasPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
-            <Button 
+            <button 
               type="submit" 
               disabled={emailStatus === "loading" || emailStatus === "success"}
-              className="rounded-xl px-6 py-3 h-auto whitespace-nowrap bg-[#050B14] hover:bg-slate-800 text-white"
+              className="rounded-xl px-6 py-3 whitespace-nowrap bg-[#050B14] hover:bg-slate-800 text-white font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {emailStatus === "loading" ? "Enviando..." : emailStatus === "success" ? "¡Enviado!" : "Enviar a mi correo"}
-            </Button>
+            </button>
           </form>
           {emailStatus === "error" && (
             <p className="text-red-500 text-sm mt-3">Hubo un error al enviar. Intenta de nuevo.</p>
