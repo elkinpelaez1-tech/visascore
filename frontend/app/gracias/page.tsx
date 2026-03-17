@@ -25,7 +25,7 @@ interface ScoreResult {
 function GraciasContent() {
   const searchParams = useSearchParams();
   // Wompi appends its transaction as ?id=... so we use ?testId=... to avoid collisions, but fallback to id just in case.
-  const testId = searchParams.get("testId") || searchParams.get("id");
+  const testId = searchParams.get("id") || searchParams.get("id");
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
@@ -47,7 +47,7 @@ function GraciasContent() {
     const fetchResult = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
-        
+
         if (res.ok) {
           const data = await res.json();
           setResult(data);
@@ -94,7 +94,7 @@ function GraciasContent() {
         method: "POST"
       });
       if (!res.ok) throw new Error("No se pudo descargar el reporte");
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -116,7 +116,7 @@ function GraciasContent() {
     e.preventDefault();
     if (!testId || !email) return;
     setEmailStatus("loading");
-    
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send/${testId}`, {
         method: "POST",
@@ -125,7 +125,7 @@ function GraciasContent() {
         },
         body: JSON.stringify({ email })
       });
-      
+
       if (!res.ok) throw new Error("Error al enviar el correo");
       setEmailStatus("success");
     } catch (err) {
@@ -192,13 +192,12 @@ function GraciasContent() {
             <div className="text-5xl font-black text-[#050B14]">
               {result.approval_probability}%
             </div>
-            
+
             <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                  result.category === 'HIGH' ? 'bg-green-500' : 
-                  result.category === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ease-out ${result.category === 'HIGH' ? 'bg-green-500' :
+                    result.category === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
                 style={{ width: `${result.approval_probability}%` }}
               ></div>
             </div>
@@ -245,8 +244,8 @@ function GraciasContent() {
               Obtén un informe detallado con todo tu análisis, simulación de mejoras y consejos para la entrevista.
             </p>
           </div>
-          <button 
-            onClick={handleDownloadReport} 
+          <button
+            onClick={handleDownloadReport}
             disabled={downloading}
             className="w-full md:w-auto flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-4 h-auto text-base font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
@@ -262,16 +261,16 @@ function GraciasContent() {
             Te enviaremos el reporte completo en formato PDF para que lo guardes.
           </p>
           <form onSubmit={handleSendEmail} className="flex flex-col sm:flex-row gap-3">
-            <input 
-              type="email" 
-              placeholder="tu@correo.com" 
+            <input
+              type="email"
+              placeholder="tu@correo.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={emailStatus === "loading" || emailStatus === "success"}
               className="rounded-xl px-6 py-3 whitespace-nowrap bg-[#050B14] hover:bg-slate-800 text-white font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >

@@ -27,7 +27,7 @@ export class PaymentsService {
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
     // Obtenemos la public key desde las variables de entorno
-    const publicKey = process.env.WOMPI_PUBLIC_KEY || 'pub_prod_123'; // Debes configurar esto en tu Render/Vercel
+    const publicKey = process.env.WOMPI_PUBLIC_KEY || 'pub_prod_jkABNRiNLkbzGqGFop3UzfCunfw9343b'; // Clave pública de producción
     const currency = 'COP';
     const amountInCents = 5000000; // 50.000 COP
     
