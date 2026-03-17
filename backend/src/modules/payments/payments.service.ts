@@ -23,17 +23,22 @@ export class PaymentsService {
     this.logger.log(`Initiating payment for test ${testId}`);
     
     // Obtenemos el link base configurado en enviroment. 
-    // Por defecto usa el Link de Pago proporcionado.
-    const baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/l/JPQzWZ';
+    // Ahora usa el nuevo Link de Pago proporcionado por el comercio.
+    const baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/l/nty2Es';
     
+    // El frontend URL a donde Wompi redirigirá al finalizar
     const frontendUrl = process.env.FRONTEND_URL || 'https://visascore.info';
-    // Mantenemos la solución testId para evitar el conflicto de IDs
+    
+    // AUNQUE hayas configurado la redirección a /gracias dentro de tu panel de Wompi, 
+    // nosotros SOBREESCRIBIMOS esa redirección agregándole dinámicamente el ?testId=...
+    // Esto es OBLIGATORIO, porque de lo contrario la página de gracias no sabría a qué 
+    // cliente exacto debe enseñarle los resultados y descargarlos de la base de datos.
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
-    // Usamos '?' o '&' dependiendo de si el baseUrl ya tiene parámetros (como los links de Wompi)
+    // Usamos '?' o '&' dependiendo de si el baseUrl ya tiene parámetros
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    // Generamos la URL tal como la pide Wompi para los Links de Pago: base + reference + redirect-url
+    // Generamos la URL mandando nuestro reference y nuestro redirect URL enriquecido
     return {
        paymentUrl: `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`
     };
