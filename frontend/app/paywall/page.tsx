@@ -16,42 +16,9 @@ function PaywallContent() {
   useEffect(() => {
     console.log('[Analytics] paywall_viewed', { testId });
   }, [testId]);
-  const handlePayment = async () => {
-    if (!testId) {
-      console.error('No testId provided for payment');
-      return;
-    }
-    
+  const handlePayment = () => {
     setIsLoading(true);
-    console.log('[Analytics] payment_initiated', { testId });
-    
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/payments/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ testId }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.paymentUrl) {
-        // Redirige a la URL de pago dinámica en la misma pestaña
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error('No payment URL returned from backend');
-      }
-    } catch (error) {
-      console.error('Error initiating payment:', error);
-      alert('Hubo un error al iniciar el pago. Por favor, intenta de nuevo.');
-      setIsLoading(false);
-    }
+    window.location.href = "https://checkout.wompi.co/l/nty2Es";
   };
 
   return (
