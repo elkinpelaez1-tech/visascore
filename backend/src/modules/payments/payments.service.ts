@@ -22,7 +22,7 @@ export class PaymentsService {
   async createPayment(testId: string) {
     this.logger.log(`Initiating payment for test ${testId}`);
     
-    const frontendUrl = process.env.FRONTEND_URL || 'https://visascore-two.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://visascore.info';
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
     // Obtenemos la URL base de Wompi, que tienes actualmente en Render como 'https://checkout.wompi.co/p/'
