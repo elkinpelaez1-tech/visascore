@@ -22,29 +22,20 @@ export class PaymentsService {
   async createPayment(testId: string) {
     this.logger.log(`Initiating payment for test ${testId}`);
     
+    // Obtenemos el link base configurado en enviroment. 
+    // Por defecto usa el Link de Pago proporcionado.
+    const baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/l/JPQzWZ';
+    
     const frontendUrl = process.env.FRONTEND_URL || 'https://visascore.info';
+    // Mantenemos la solución testId para evitar el conflicto de IDs
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
-    // Obtenemos la URL base de Wompi, que tienes actualmente en Render como 'https://checkout.wompi.co/p/'
-    const baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/p/';
-    let paymentUrl = '';
+    // Usamos '?' o '&' dependiendo de si el baseUrl ya tiene parámetros (como los links de Wompi)
+    const separator = baseUrl.includes('?') ? '&' : '?';
 
-    if (baseUrl.includes('/l/')) {
-        // Si está configurado usando un Enlace de Pago pre-creado (ej: /l/XYZ)
-        let separator = baseUrl.includes('?') ? '&' : '?';
-        paymentUrl = `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`;
-    } else {
-        // Si está usando el Web Checkout Oficial (/p/), el cual requiere datos obligatorios
-        const publicKey = process.env.WOMPI_PUBLIC_KEY && process.env.WOMPI_PUBLIC_KEY !== 'pub_prod_123' 
-            ? process.env.WOMPI_PUBLIC_KEY 
-            : 'pub_prod_jkABNRiNLkbzGqGFop3UzfCunfw9343b'; // Clave pública de producción forzada
-        const currency = 'COP';
-        const amountInCents = 5000000; // 50.000 COP
-        paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${testId}&redirect-url=${redirectUrl}`;
-    }
-    
+    // Generamos la URL tal como la pide Wompi para los Links de Pago: base + reference + redirect-url
     return {
-       paymentUrl
+       paymentUrl: `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`
     };
   }
 
