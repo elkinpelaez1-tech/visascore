@@ -22,17 +22,29 @@ export class PaymentsService {
   async createPayment(testId: string) {
     this.logger.log(`Initiating payment for test ${testId}`);
     
-    // Si CHECKOUT_UI_URL es un link de Wompi (ej: 'https://checkout.wompi.co/l/JPQzWZ')
-    // agregamos '?reference=testId' y el redirect url.
-    let baseUrl = 'https://checkout.wompi.co/l/JPQzWZ';
-    let separator = baseUrl.includes('?') ? '&' : '?';
-    
-    // El frontend URL a donde Wompi redirigirá al finalizar
     const frontendUrl = process.env.FRONTEND_URL || 'https://visascore-two.vercel.app';
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
+    // Obtenemos la URL base de Wompi, que tienes actualmente en Render como 'https://checkout.wompi.co/p/'
+    const baseUrl = process.env.CHECKOUT_UI_URL || 'https://checkout.wompi.co/p/';
+    let paymentUrl = '';
+
+    if (baseUrl.includes('/l/')) {
+        // Si está configurado usando un Enlace de Pago pre-creado (ej: /l/XYZ)
+        let separator = baseUrl.includes('?') ? '&' : '?';
+        paymentUrl = `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`;
+    } else {
+        // Si está usando el Web Checkout Oficial (/p/), el cual requiere datos obligatorios
+        const publicKey = process.env.WOMPI_PUBLIC_KEY && process.env.WOMPI_PUBLIC_KEY !== 'pub_prod_123' 
+            ? process.env.WOMPI_PUBLIC_KEY 
+            : 'pub_prod_jkABNRiNLkbzGqGFop3UzfCunfw9343b'; // Clave pública de producción forzada
+        const currency = 'COP';
+        const amountInCents = 5000000; // 50.000 COP
+        paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${testId}&redirect-url=${redirectUrl}`;
+    }
+    
     return {
-       paymentUrl: `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`
+       paymentUrl
     };
   }
 
