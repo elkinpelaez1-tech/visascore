@@ -22,21 +22,17 @@ export class PaymentsService {
   async createPayment(testId: string) {
     this.logger.log(`Initiating payment for test ${testId}`);
     
+    // Si CHECKOUT_UI_URL es un link de Wompi (ej: 'https://checkout.wompi.co/l/JPQzWZ')
+    // agregamos '?reference=testId' y el redirect url.
+    let baseUrl = 'https://checkout.wompi.co/l/JPQzWZ';
+    let separator = baseUrl.includes('?') ? '&' : '?';
+    
     // El frontend URL a donde Wompi redirigirá al finalizar
     const frontendUrl = process.env.FRONTEND_URL || 'https://visascore-two.vercel.app';
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
     
-    // Obtenemos la public key desde las variables de entorno
-    const publicKey = process.env.WOMPI_PUBLIC_KEY || 'pub_prod_jkABNRiNLkbzGqGFop3UzfCunfw9343b'; // Clave pública de producción
-    const currency = 'COP';
-    const amountInCents = 5000000; // 50.000 COP
-    
-    // Usamos Web Checkout en vez de un Link de Pago, para que soporte reference dinámico y redirect-url
-    // Docs: https://docs.wompi.co/docs/es-es/web-checkout/
-    const paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${testId}&redirect-url=${redirectUrl}`;
-    
     return {
-       paymentUrl
+       paymentUrl: `${baseUrl}${separator}reference=${testId}&redirect-url=${redirectUrl}`
     };
   }
 
