@@ -24,7 +24,8 @@ interface ScoreResult {
 
 function GraciasContent() {
   const searchParams = useSearchParams();
-  const testId = searchParams.get("id");
+  // Wompi appends its transaction as ?id=... so we use ?testId=... to avoid collisions, but fallback to id just in case.
+  const testId = searchParams.get("testId") || searchParams.get("id");
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
