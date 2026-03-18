@@ -17,8 +17,7 @@ function PaywallContent() {
     console.log('[Analytics] paywall_viewed', { testId });
   }, [testId]);
   const handlePayment = () => {
-    setIsLoading(true);
-    window.location.href = "https://checkout.wompi.co/l/PBIxf6";
+    window.open("https://checkout.wompi.co/l/PBIxf6", "_blank");
   };
 
   return (
