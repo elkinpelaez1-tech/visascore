@@ -50,11 +50,14 @@ function GraciasContent() {
 
     const resolveTransaction = async () => {
       try {
+        console.log("Wompi ID:", wompiId);
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.testId) {
-            setTestId(data.testId);
+          const resolvedTestId = data.testId;
+          console.log("Resolved testId:", resolvedTestId);
+          if (resolvedTestId) {
+            setTestId(resolvedTestId);
             return;
           }
         }
@@ -163,6 +166,16 @@ function GraciasContent() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Pago en confirmación</h2>
+        <p className="text-slate-600">Estamos verificando tu transacción y calculando tu VisaScore...</p>
+      </div>
+    );
+  }
+
   if (!isTestIdValid) {
     return (
       <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
@@ -172,16 +185,6 @@ function GraciasContent() {
         <Link href="/" className="mt-8 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
           Volver al inicio
         </Link>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Pago en confirmación</h2>
-        <p className="text-slate-600">Estamos verificando tu transacción y calculando tu VisaScore...</p>
       </div>
     );
   }

@@ -145,6 +145,10 @@ export class PaymentsService {
       throw new BadRequestException('Transaction not found or invalid');
     }
 
-    return { testId: payment.test_id };
+    this.logger.log(`Resolviendo transacción ${transactionId} → testId ${payment.test_id}`);
+    
+    return { 
+      testId: payment.test_id 
+    };
   }
 }
