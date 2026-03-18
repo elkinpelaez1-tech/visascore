@@ -20,12 +20,10 @@ export class PaymentsService {
   }
 
   async createPayment(testId: string) {
-  this.logger.log(`Initiating payment for test ${testId}`);
-
-  return {
-    paymentUrl: 'https://checkout.wompi.co/l/nty2Es'
-  };
-}
+    return {
+      paymentUrl: 'https://checkout.wompi.co/l/6cpjku'
+    };
+  }
 
   async handleWebhook(body: any) {
     this.logger.log('Webhook Wompi recibido, procesando payload');
