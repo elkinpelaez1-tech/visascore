@@ -25,7 +25,8 @@ interface ScoreResult {
 function GraciasContent() {
   const searchParams = useSearchParams();
   // Wompi appends its transaction as ?id=... so we use ?testId=... to avoid collisions, but fallback to id just in case.
-  const testId = searchParams.get("id") || searchParams.get("id");
+  const testId = searchParams.get("id");
+  const isTestIdValid = testId && testId !== "undefined" && testId !== "null";
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
@@ -36,8 +37,7 @@ function GraciasContent() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    if (!testId) {
-      setError("No se ha proporcionado un ID de prueba válido.");
+    if (!isTestIdValid) {
       setLoading(false);
       return;
     }
@@ -133,6 +133,19 @@ function GraciasContent() {
       setEmailStatus("error");
     }
   };
+
+  if (!isTestIdValid) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
+        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-6" />
+        <h2 className="text-2xl font-bold text-[#050B14] mb-2 text-center">Pago recibido correctamente.</h2>
+        <p className="text-slate-600 text-center">Estamos procesando tu resultado.</p>
+        <Link href="/" className="mt-8 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+          Volver al inicio
+        </Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
