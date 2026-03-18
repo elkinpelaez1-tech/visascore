@@ -134,11 +134,17 @@ export class PaymentsService {
   }
 
   async resolveTransaction(transactionId: string) {
+    this.logger.log(`Buscando transactionId: ${transactionId}`);
+
     const { data: payment, error } = await this.supabase
       .from('payments')
       .select('test_id')
       .eq('wompi_transaction_id', transactionId)
       .single();
+
+    if (!payment) {
+      this.logger.error(`No se encontró transacción en BD: ${transactionId}`);
+    }
 
     if (error || !payment) {
       this.logger.error(`Error resolving transaction ${transactionId}: ${error?.message}`);
@@ -149,6 +155,20 @@ export class PaymentsService {
     
     return { 
       testId: payment.test_id 
+    };
+  }
+
+  async debugTransaction(transactionId: string) {
+    const { data: payment, error } = await this.supabase
+      .from('payments')
+      .select('*')
+      .eq('wompi_transaction_id', transactionId)
+      .single();
+
+    return {
+      found: !!payment,
+      data: payment || null,
+      error: error || null
     };
   }
 }

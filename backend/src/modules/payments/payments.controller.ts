@@ -12,6 +12,11 @@ export class PaymentsController {
     return this.paymentsService.resolveTransaction(transactionId);
   }
 
+  @Get('debug/:transactionId')
+  async debug(@Param('transactionId') transactionId: string) {
+    return this.paymentsService.debugTransaction(transactionId);
+  }
+
   @Post('create')
   async create(@Body('testId') testId: string) {
     this.logger.log(`Payment creation requested for test: ${testId}`);

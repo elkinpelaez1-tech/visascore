@@ -59,6 +59,8 @@ function GraciasContent() {
           if (resolvedTestId) {
             setTestId(resolvedTestId);
             return;
+          } else {
+            console.error("No se pudo resolver testId");
           }
         }
         setLoading(false);
