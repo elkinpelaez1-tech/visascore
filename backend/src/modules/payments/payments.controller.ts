@@ -14,7 +14,13 @@ export class PaymentsController {
 
   @Get('debug/:transactionId')
   async debug(@Param('transactionId') transactionId: string) {
-    return this.paymentsService.debugTransaction(transactionId);
+    const payment = await this.paymentsService.findByTransactionId(transactionId);
+
+    return {
+      found: !!payment,
+      data: payment || null,
+      error: null
+    };
   }
 
   @Post('create')
@@ -26,7 +32,6 @@ export class PaymentsController {
   @Post('webhook')
   async webhook(@Body() body: any) {
     this.logger.log('Webhook Wompi recibido');
-    // Enviamos el body completo al servicio, que extraerá el signature
     return this.paymentsService.handleWebhook(body);
   }
 }

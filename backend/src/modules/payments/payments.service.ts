@@ -19,6 +19,9 @@ export class PaymentsService {
     );
   }
 
+  // =============================
+  // CREATE PAYMENT
+  // =============================
   async createPayment(testId: string) {
     const baseUrl = process.env.CHECKOUT_UI_URL;
     const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
@@ -30,77 +33,69 @@ export class PaymentsService {
     };
   }
 
+  // =============================
+  // WEBHOOK WOMPI
+  // =============================
   async handleWebhook(body: any) {
-    this.logger.log('Webhook Wompi recibido, procesando payload');
-    
-    // Extraer firma de la estructura original de Wompi
+    this.logger.log('Webhook Wompi recibido');
+
     const signature = body.signature?.checksum;
-    
-    // 1. Validate signature
+
     if (!signature || !this.isValidWompiSignature(body, signature)) {
-      this.logger.warn('Firma inválida: el webhook no pudo ser verificado');
-      throw new BadRequestException('Firma inválida del evento Wompi');
+      this.logger.warn('Firma inválida');
+      throw new BadRequestException('Firma inválida');
     }
 
-    // 2. Validate Event
     if (body.event !== 'transaction.updated') {
-      this.logger.log(`Evento ignorado: esperado transaction.updated pero se recibió ${body.event}`);
       return { received: true, ignored: true };
     }
 
     const transaction = body.data?.transaction;
     if (!transaction) {
-       throw new BadRequestException('Payload incompleto: falta transacción');
+      throw new BadRequestException('Transacción inválida');
     }
 
     const testId = transaction.reference;
     const status = transaction.status;
 
+    // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
+    const { data: existing } = await this.supabase
+      .from('payments')
+      .select('id')
+      .eq('wompi_transaction_id', transaction.id)
+      .single();
+
+    if (existing) {
+      this.logger.log(`Transacción ya registrada: ${transaction.id}`);
+      return { received: true };
+    }
+
+    await this.supabase.from('payments').insert({
+      test_id: testId,
+      wompi_transaction_id: transaction.id,
+      amount: transaction.amount_in_cents / 100,
+      status: status.toLowerCase(),
+      payment_method: transaction.payment_method_type,
+      raw_webhook_data: body
+    });
+
     if (status === 'APPROVED') {
-      this.logger.log(`Pago aprobado para el test ID: ${testId}`);
+      this.logger.log(`Pago aprobado para test ${testId}`);
 
-      // 2. Idempotency Check: check if already processed
-      const { data: existingPayment } = await this.supabase
-        .from('payments')
-        .select('id')
-        .eq('wompi_transaction_id', transaction.id)
-        .single();
-
-      if (existingPayment) {
-        this.logger.log(`Payment ${transaction.id} already processed. Skipping.`);
-        return { received: true, deduplicated: true };
-      }
-
-      // 3. Unlock test
       await this.supabase
         .from('visa_tests')
         .update({ status: 'paid' })
         .eq('id', testId);
 
-      // 4. Log payment
-      await this.supabase.from('payments').insert({
-        test_id: testId,
-        wompi_transaction_id: transaction.id,
-        amount: transaction.amount_in_cents / 100,
-        status: 'approved',
-        payment_method: transaction.payment_method_type,
-        raw_webhook_data: body
-      });
-
-      // 5. Fetch test details for email (including approval probability from metadata)
       const { data: test } = await this.supabase
         .from('visa_tests')
         .select('*, profiles(email)')
         .eq('id', testId)
         .single();
-      
-      if (test && test.profiles?.email) {
-        this.logger.log(`Triggering report generation and email for ${test.profiles.email}`);
-        
-        // Generate PDF
+
+      if (test?.profiles?.email) {
         const pdfBuffer = await this.reportsService.generatePdf(testId);
-        
-        // Send Email
+
         await this.mailService.sendResultEmail(
           test.profiles.email,
           testId,
@@ -108,67 +103,78 @@ export class PaymentsService {
           pdfBuffer
         );
       }
-    } else if (status === 'DECLINED' || status === 'ERROR' || status === 'VOIDED') {
-      this.logger.log(`Pago rechazado o fallido para el test ID: ${testId} con estado: ${status}`);
-    } else {
-      this.logger.log(`Estado de pago ignorado para el test ID: ${testId} - Estado: ${status}`);
     }
 
     return { received: true };
   }
 
+  // =============================
+  // VALIDAR FIRMA
+  // =============================
   private isValidWompiSignature(body: any, signature: string): boolean {
     const transaction = body.data?.transaction;
     const timestamp = body.timestamp;
     const secret = process.env.WOMPI_WEBHOOK_SECRET;
-    
-    if (!transaction || !timestamp || !secret) {
-      return false;
-    }
 
-    // Wompi uses: sha256(transaction.id + transaction.status + transaction.amount_in_cents + timestamp + secret)
-    const rawString = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${secret}`;
-    const hash = crypto.SHA256(rawString).toString();
-    
+    if (!transaction || !timestamp || !secret) return false;
+
+    const raw = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${secret}`;
+    const hash = crypto.SHA256(raw).toString();
+
     return hash === signature;
   }
 
+  // =============================
+  // 🔥 RESOLVE (EL CLAVE)
+  // =============================
   async resolveTransaction(transactionId: string) {
     this.logger.log(`Buscando transactionId: ${transactionId}`);
 
-    const { data: payment, error } = await this.supabase
+    const { data, error } = await this.supabase
       .from('payments')
       .select('test_id')
       .eq('wompi_transaction_id', transactionId)
-      .single();
+      .maybeSingle(); // 🔥 CAMBIO CLAVE
 
-    if (!payment) {
-      this.logger.error(`No se encontró transacción en BD: ${transactionId}`);
+    if (!data) {
+      this.logger.warn(`Aún no existe en BD: ${transactionId}`);
+      return { testId: null }; // 🔥 NO lanzar error
     }
 
-    if (error || !payment) {
-      this.logger.error(`Error resolving transaction ${transactionId}: ${error?.message}`);
-      throw new BadRequestException('Transaction not found or invalid');
-    }
+    this.logger.log(`Encontrado → testId: ${data.test_id}`);
 
-    this.logger.log(`Resolviendo transacción ${transactionId} → testId ${payment.test_id}`);
-    
-    return { 
-      testId: payment.test_id 
+    return {
+      testId: data.test_id
     };
   }
 
+  // =============================
+  // DEBUG
+  // =============================
   async debugTransaction(transactionId: string) {
-    const { data: payment, error } = await this.supabase
+    const { data, error } = await this.supabase
       .from('payments')
       .select('*')
       .eq('wompi_transaction_id', transactionId)
-      .single();
+      .maybeSingle();
 
     return {
-      found: !!payment,
-      data: payment || null,
+      found: !!data,
+      data: data || null,
       error: error || null
     };
+  }
+
+  // =============================
+  // HELPER
+  // =============================
+  async findByTransactionId(transactionId: string) {
+    const { data } = await this.supabase
+      .from('payments')
+      .select('*')
+      .eq('wompi_transaction_id', transactionId)
+      .maybeSingle();
+
+    return data;
   }
 }
