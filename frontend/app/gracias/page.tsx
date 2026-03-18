@@ -25,8 +25,8 @@ interface ScoreResult {
 function GraciasContent() {
   const searchParams = useSearchParams();
   // Wompi appends its transaction as ?id=... so we use ?testId=... to avoid collisions, but fallback to id just in case.
-  const testId = searchParams.get("id");
-  const isTestIdValid = testId && testId !== "undefined" && testId !== "null";
+  const testId = searchParams.get("testId") || searchParams.get("id");
+  const isTestIdValid = !!testId && testId !== "undefined" && testId !== "null";
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
@@ -37,7 +37,7 @@ function GraciasContent() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    if (!isTestIdValid) {
+    if (!testId || testId === "undefined" || testId === "null") {
       setLoading(false);
       return;
     }
