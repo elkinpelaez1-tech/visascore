@@ -20,8 +20,13 @@ export class PaymentsService {
   }
 
   async createPayment(testId: string) {
+    const baseUrl = process.env.CHECKOUT_UI_URL;
+    const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
+
+    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
+
     return {
-      paymentUrl: 'https://checkout.wompi.co/l/6cpjku'
+      paymentUrl: `${baseUrl}?reference=${testId}&redirect-url=${redirectUrl}`
     };
   }
 
