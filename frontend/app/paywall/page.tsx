@@ -16,19 +16,8 @@ function PaywallContent() {
   useEffect(() => {
     console.log('[Analytics] paywall_viewed', { testId });
   }, [testId]);
-  const handlePayment = async () => {
-    setIsLoading(true);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ testId }),
-    });
-
-    const data = await res.json();
-
-    window.location.href = data.paymentUrl;
+  const handlePayment = () => {
+    window.location.href = "https://checkout.wompi.co/l/74koZj";
   };
 
   return (
