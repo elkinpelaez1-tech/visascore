@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Logger, Get, Param } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
@@ -6,6 +6,11 @@ export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
 
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  @Get('resolve/:transactionId')
+  async resolve(@Param('transactionId') transactionId: string) {
+    return this.paymentsService.resolveTransaction(transactionId);
+  }
 
   @Post('create')
   async create(@Body('testId') testId: string) {

@@ -132,4 +132,19 @@ export class PaymentsService {
     
     return hash === signature;
   }
+
+  async resolveTransaction(transactionId: string) {
+    const { data: payment, error } = await this.supabase
+      .from('payments')
+      .select('test_id')
+      .eq('wompi_transaction_id', transactionId)
+      .single();
+
+    if (error || !payment) {
+      this.logger.error(`Error resolving transaction ${transactionId}: ${error?.message}`);
+      throw new BadRequestException('Transaction not found or invalid');
+    }
+
+    return { testId: payment.test_id };
+  }
 }

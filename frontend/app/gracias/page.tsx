@@ -24,8 +24,10 @@ interface ScoreResult {
 
 function GraciasContent() {
   const searchParams = useSearchParams();
-  // Wompi appends its transaction as ?id=... so we use ?testId=... to avoid collisions, but fallback to id just in case.
-  const testId = searchParams.get("testId") || searchParams.get("id");
+  const wompiId = searchParams.get("id");
+  const urlTestId = searchParams.get("testId");
+
+  const [testId, setTestId] = useState<string | null>(urlTestId);
   const isTestIdValid = !!testId && testId !== "undefined" && testId !== "null";
 
   const [loading, setLoading] = useState(true);
@@ -37,10 +39,37 @@ function GraciasContent() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    if (!testId || testId === "undefined" || testId === "null") {
+    if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") {
+      setTestId(urlTestId);
+      return;
+    }
+    if (!wompiId || wompiId === "undefined" || wompiId === "null") {
       setLoading(false);
       return;
     }
+
+    const resolveTransaction = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.testId) {
+            setTestId(data.testId);
+            return;
+          }
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error("Error resolving transaction:", err);
+        setLoading(false);
+      }
+    };
+
+    resolveTransaction();
+  }, [wompiId, urlTestId]);
+
+  useEffect(() => {
+    if (!isTestIdValid) return;
 
     let intervalId: NodeJS.Timeout;
 
