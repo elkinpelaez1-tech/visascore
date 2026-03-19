@@ -48,29 +48,40 @@ function GraciasContent() {
       return;
     }
 
-    const resolveTransaction = async () => {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const interval = setInterval(async () => {
+      attempts++;
       try {
-        console.log("Wompi ID:", wompiId);
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
-        if (res.ok) {
-          const data = await res.json();
-          const resolvedTestId = data.testId;
-          console.log("Resolved testId:", resolvedTestId);
-          if (resolvedTestId) {
-            setTestId(resolvedTestId);
-            return;
-          } else {
-            console.error("No se pudo resolver testId");
+        const data = await res.json();
+
+        console.log("Intento:", attempts, "Resultado:", data);
+
+        if (data.testId) {
+          clearInterval(interval);
+          setTestId(data.testId);
+
+          // ahora sí cargar resultado real
+          const resultRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${data.testId}`);
+          if (resultRes.ok) {
+            const resultData = await resultRes.json();
+            setResult(resultData);
+            setLoading(false);
           }
         }
-        setLoading(false);
+
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setLoading(false);
+        }
       } catch (err) {
         console.error("Error resolving transaction:", err);
-        setLoading(false);
       }
-    };
+    }, 2000); // cada 2 segundos
 
-    resolveTransaction();
+    return () => clearInterval(interval);
   }, [wompiId, urlTestId]);
 
   useEffect(() => {
