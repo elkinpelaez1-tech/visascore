@@ -83,12 +83,12 @@ export class PaymentsService {
       this.logger.log(`Pago aprobado para test ${testId}`);
 
       await this.supabase
-        .from('visa_tests')
+        .from('visa_test')
         .update({ status: 'paid' })
         .eq('id', testId);
 
       const { data: test } = await this.supabase
-        .from('visa_tests')
+        .from('visa_test')
         .select('*, profiles(email)')
         .eq('id', testId)
         .single();
