@@ -23,9 +23,23 @@ export class PaymentsService {
   // CREATE PAYMENT
   // =============================
   async createPayment(testId: string) {
+    // Verificar si el test ya existe
+    const { data: existing } = await this.supabase
+      .from('visa_test')
+      .select('id')
+      .eq('id', testId)
+      .single();
+
+    // Si no existe, crearlo
+    if (!existing) {
+      await this.supabase.from('visa_test').insert({
+        id: testId,
+        status: 'pending'
+      });
+    }
+
     const baseUrl = process.env.CHECKOUT_UI_URL;
     const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
-
     const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
 
     return {
