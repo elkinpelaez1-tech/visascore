@@ -80,6 +80,16 @@ export class VisaTestService {
   }
 
   async getResult(testId: string, currentUserId?: string) {
+    console.log('[DEBUG] getResult TEST ID:', testId);
+    console.log('[DEBUG] SUPABASE_URL:', process.env.SUPABASE_URL);
+    
+    // Primero probar la conexión simple sin joins
+    const { data: testDumb, error: errorDumb } = await this.supabase
+      .from('visa_tests')
+      .select('*')
+      .limit(1);
+    console.log('[DEBUG] SIMPLE QUERY RESULT:', testDumb, 'ERROR:', errorDumb);
+
     // ✅ 1. Obtener test SIN JOIN (clave del fix)
     const { data: test, error } = await this.supabase
       .from('visa_tests')
