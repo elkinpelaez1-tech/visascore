@@ -7,21 +7,6 @@ export class PaymentsController {
 
   constructor(private readonly paymentsService: PaymentsService) {}
 
-//   @Get('resolve/:transactionId')
-//   async resolve(@Param('transactionId') transactionId: string) {
-//     return this.paymentsService.resolveTransaction(transactionId);
-//   }
-
-//   @Get('debug/:transactionId')
-//   async debug(@Param('transactionId') transactionId: string) {
-//     const payment = await this.paymentsService.findByTransactionId(transactionId);
-
-//     return {
-//       found: !!payment,
-//       data: payment || null,
-//       error: null
-//     };
-//   }
 
   @Post('create')
   async create(@Body('testId') testId: string) {
