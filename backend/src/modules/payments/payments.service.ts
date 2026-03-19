@@ -128,43 +128,15 @@ export class PaymentsService {
   // 🔥 RESOLVE (EL CLAVE)
   // =============================
   async resolveTransaction(transactionId: string) {
-    this.logger.log(`Buscando transactionId: ${transactionId}`);
-
-    const { data: payment, error } = await this.supabase
-      .from('payments')
-      .select('test_id')
-      .eq('wompi_transaction_id', transactionId)
-      .single();
-
-    if (error || !payment) {
-      this.logger.error(`Error resolving transaction ${transactionId}: ${error?.message}`);
-      throw new BadRequestException('Transaction not found or invalid');
-    }
-
-    this.logger.log(`Resolviendo transacción ${transactionId} → testId ${payment.test_id}`);
-
-    return {
-      testId: payment.test_id
-    };
+    return { message: 'ok', transactionId };
   }
 
   // =============================
   // DEBUG
   // =============================
   async debugTransaction(transactionId: string) {
-    const { data: payment, error } = await this.supabase
-      .from('payments')
-      .select('*')
-      .eq('wompi_transaction_id', transactionId)
-      .single();
-
-    return {
-      found: !!payment,
-      data: payment || null,
-      error: error || null
-    };
+    return { message: 'debug ok', transactionId };
   }
-
   // =============================
   // HELPER
   // =============================
