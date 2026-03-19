@@ -25,14 +25,14 @@ export class PaymentsService {
   async createPayment(testId: string) {
     // Verificar si el test ya existe
     const { data: existing } = await this.supabase
-      .from('visa_test')
+      .from('visa_tests')
       .select('id')
       .eq('id', testId)
       .single();
 
     // Si no existe, crearlo
     if (!existing) {
-      await this.supabase.from('visa_test').insert({
+      await this.supabase.from('visa_tests').insert({
         id: testId,
         status: 'pending'
       });
@@ -97,12 +97,12 @@ export class PaymentsService {
       this.logger.log(`Pago aprobado para test ${testId}`);
 
       await this.supabase
-        .from('visa_test')
+        .from('visa_tests')
         .update({ status: 'paid' })
         .eq('id', testId);
 
       const { data: test } = await this.supabase
-        .from('visa_test')
+        .from('visa_tests')
         .select('*, profiles(email)')
         .eq('id', testId)
         .single();
