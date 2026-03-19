@@ -130,21 +130,21 @@ export class PaymentsService {
   async resolveTransaction(transactionId: string) {
     this.logger.log(`Buscando transactionId: ${transactionId}`);
 
-    const { data, error } = await this.supabase
+    const { data: payment, error } = await this.supabase
       .from('payments')
       .select('test_id')
       .eq('wompi_transaction_id', transactionId)
-      .maybeSingle(); // 🔥 CAMBIO CLAVE
+      .single();
 
-    if (!data) {
-      this.logger.warn(`Aún no existe en BD: ${transactionId}`);
-      return { testId: null }; // 🔥 NO lanzar error
+    if (error || !payment) {
+      this.logger.error(`Error resolving transaction ${transactionId}: ${error?.message}`);
+      throw new BadRequestException('Transaction not found or invalid');
     }
 
-    this.logger.log(`Encontrado → testId: ${data.test_id}`);
+    this.logger.log(`Resolviendo transacción ${transactionId} → testId ${payment.test_id}`);
 
     return {
-      testId: data.test_id
+      testId: payment.test_id
     };
   }
 
@@ -152,15 +152,15 @@ export class PaymentsService {
   // DEBUG
   // =============================
   async debugTransaction(transactionId: string) {
-    const { data, error } = await this.supabase
+    const { data: payment, error } = await this.supabase
       .from('payments')
       .select('*')
       .eq('wompi_transaction_id', transactionId)
-      .maybeSingle();
+      .single();
 
     return {
-      found: !!data,
-      data: data || null,
+      found: !!payment,
+      data: payment || null,
       error: error || null
     };
   }
