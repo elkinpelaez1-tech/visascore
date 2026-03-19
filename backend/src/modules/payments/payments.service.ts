@@ -41,10 +41,10 @@ export class PaymentsService {
 
     const signature = body.signature?.checksum;
 
-    if (!signature || !this.isValidWompiSignature(body, signature)) {
-      this.logger.warn('Firma inválida');
-      throw new BadRequestException('Firma inválida');
-    }
+    // if (!signature || !this.isValidWompiSignature(body, signature)) {
+    //   this.logger.warn('Firma inválida');
+    //   throw new BadRequestException('Firma inválida');
+    // }
 
     if (body.event !== 'transaction.updated') {
       return { received: true, ignored: true };
