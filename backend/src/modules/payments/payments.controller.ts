@@ -7,7 +7,15 @@ export class PaymentsController {
 
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('resolve/:transactionId')
+  async resolve(@Param('transactionId') transactionId: string) {
+    return { message: 'ok' };
+  }
 
+  @Get('debug/:transactionId')
+  async debug(@Param('transactionId') transactionId: string) {
+    return { message: 'ok' };
+  }
   @Post('create')
   async create(@Body('testId') testId: string) {
     this.logger.log(`Payment creation requested for test: ${testId}`);
