@@ -24,7 +24,7 @@ export class VisaTestService {
         overall_score: result.totalScore,
         status: 'locked',
         metadata: { 
-            approval_probability: result.approvalProbability 
+          approval_probability: result.approvalProbability 
         }
       })
       .select()
@@ -60,7 +60,11 @@ export class VisaTestService {
   }
 
   async unlockTest(testId: string) {
-    await this.supabase.from('visa_tests').update({ status: 'paid' }).eq('id', testId);
+    await this.supabase
+      .from('visa_tests')
+      .update({ status: 'paid' })
+      .eq('id', testId);
+
     return { success: true, status: 'paid' };
   }
 
@@ -76,40 +80,56 @@ export class VisaTestService {
   }
 
   async getResult(testId: string, currentUserId?: string) {
+    // ✅ 1. Obtener test SIN JOIN (clave del fix)
     const { data: test, error } = await this.supabase
       .from('visa_tests')
-      .select('*, visa_score_breakdown(*)')
+      .select('*')
       .eq('id', testId)
-      .single();
+      .maybeSingle();
 
     if (error || !test) throw new NotFoundException('Test not found');
-    
-    // Security check: Identity (if userId is provided)
-    if (currentUserId && test.user_id !== currentUserId && test.user_id !== '00000000-0000-0000-0000-000000000000') {
-        throw new ForbiddenException('No tienes permiso para ver este resultado.');
+
+    // ✅ Seguridad: usuario
+    if (
+      currentUserId &&
+      test.user_id !== currentUserId &&
+      test.user_id !== '00000000-0000-0000-0000-000000000000'
+    ) {
+      throw new ForbiddenException('No tienes permiso para ver este resultado.');
     }
 
-    // Security check: Payment status
+    // ✅ Seguridad: pago
     if (test.status !== 'paid') {
       throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
     }
-    
-    const breakdown = test.visa_score_breakdown;
+
+    // ✅ 2. Obtener breakdown aparte (NO rompe si no existe)
+    const { data: breakdown } = await this.supabase
+      .from('visa_score_breakdown')
+      .select('*')
+      .eq('test_id', testId)
+      .maybeSingle();
+
     return {
-        overall_score: test.overall_score,
-        approval_probability: test.metadata?.approval_probability || 0,
-        category: test.overall_score > 700 ? 'HIGH' : test.overall_score > 400 ? 'MEDIUM' : 'LOW',
-        breakdown: {
-          economic: breakdown.economic_points,
-          ties: breakdown.rootedness_points,
-          travel: breakdown.travel_history_points,
-          migration: breakdown.migration_history_points,
-          personal: breakdown.personal_points
-        },
-        strengths: breakdown.strengths,
-        weaknesses: breakdown.weaknesses,
-        recommendations: breakdown.recommendations,
-        simulations: breakdown.improvement_simulations
+      overall_score: test.overall_score,
+      approval_probability: test.metadata?.approval_probability || 0,
+      category:
+        test.overall_score > 700
+          ? 'HIGH'
+          : test.overall_score > 400
+          ? 'MEDIUM'
+          : 'LOW',
+      breakdown: {
+        economic: breakdown?.economic_points || 0,
+        ties: breakdown?.rootedness_points || 0,
+        travel: breakdown?.travel_history_points || 0,
+        migration: breakdown?.migration_history_points || 0,
+        personal: breakdown?.personal_points || 0
+      },
+      strengths: breakdown?.strengths || [],
+      weaknesses: breakdown?.weaknesses || [],
+      recommendations: breakdown?.recommendations || [],
+      simulations: breakdown?.improvement_simulations || []
     };
   }
 }
