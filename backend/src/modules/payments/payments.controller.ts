@@ -9,14 +9,13 @@ export class PaymentsController {
 
   @Get('resolve/:transactionId')
   async resolve(@Param('transactionId') transactionId: string) {
-    return this.paymentsService.resolveTransaction(transactionId);
+    return { message: 'ok' };
   }
 
   @Get('debug/:transactionId')
   async debug(@Param('transactionId') transactionId: string) {
-    return this.paymentsService.debugTransaction(transactionId);
+    return { message: 'ok' };
   }
-
   @Post('create')
   async create(@Body('testId') testId: string) {
     this.logger.log(`Payment creation requested for test: ${testId}`);
