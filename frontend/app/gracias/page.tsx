@@ -4,24 +4,112 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, Download, Mail, RefreshCw, XCircle } from "lucide-react";
+import { 
+  ArrowRight, 
+  CheckCircle2, 
+  Download, 
+  Mail, 
+  RefreshCw, 
+  XCircle, 
+  ShieldCheck, 
+  FileText, 
+  AlertTriangle, 
+  Info 
+} from "lucide-react";
 import Link from "next/link";
 
 interface ScoreResult {
-overall_score: number;
-approval_probability: number;
-category: "HIGH" | "MEDIUM" | "LOW";
-breakdown: {
-economic: number;
-ties: number;
-travel: number;
-migration: number;
-personal: number;
-};
-strengths: string[];
-weaknesses: string[];
-recommendations: string[];
+  overall_score: number;
+  approval_probability: number;
+  category: "HIGH" | "MEDIUM" | "LOW";
+  breakdown: {
+    economic: number;
+    ties: number;
+    travel: number;
+    migration: number;
+    personal: number;
+  };
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
 }
+
+const CircularGauge = ({ score, color }: { score: number, color: string }) => {
+  const radius = 100;
+  const stroke = 12;
+  const normalizedRadius = radius - stroke * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const scoreNum = Number(score) || 0;
+  // Calculate percentage relative to max possible score (assumed 1000 Based on context)
+  const percentage = Math.min(Math.max(scoreNum / 1000, 0), 1);
+  const strokeDashoffset = circumference - percentage * circumference;
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <div className="relative flex items-center justify-center transition-transform hover:scale-105 duration-500">
+      <svg height={radius * 2} width={radius * 2} className="transform -rotate-90 filter drop-shadow-sm">
+        <circle
+          stroke="#E2E8F0"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          stroke={color}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeDasharray={circumference + ' ' + circumference}
+          style={{ 
+            strokeDashoffset: mounted ? strokeDashoffset : circumference, 
+            transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" 
+          }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center mt-1">
+        <span className="text-5xl font-black tracking-tight" style={{ color }}>{score}</span>
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">VisaScore</span>
+      </div>
+    </div>
+  );
+};
+
+const getCategoryDetails = (category: string) => {
+  switch (category) {
+    case 'HIGH':
+      return { 
+        color: '#0A3161', 
+        label: 'Perfil Sólido', 
+        bg: 'bg-[#0A3161]/10', 
+        text: 'text-[#0A3161]',
+        icon: <ShieldCheck className="h-6 w-6 text-[#0A3161]" />
+      };
+    case 'MEDIUM':
+      return { 
+        color: '#F59E0B', 
+        label: 'Riesgo Moderado', 
+        bg: 'bg-yellow-100', 
+        text: 'text-yellow-700',
+        icon: <Info className="h-6 w-6 text-yellow-600" />
+      };
+    case 'LOW':
+    default:
+      return { 
+        color: '#B31942', 
+        label: 'Alto Riesgo / Baja Probabilidad', 
+        bg: 'bg-[#B31942]/10', 
+        text: 'text-[#B31942]',
+        icon: <AlertTriangle className="h-6 w-6 text-[#B31942]" />
+      };
+  }
+};
 
 function GraciasContent() {
   const searchParams = useSearchParams();
@@ -39,6 +127,7 @@ function GraciasContent() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloading, setDownloading] = useState(false);
 
+  // 1. Resolve wompi payment to testId
   useEffect(() => {
     if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") {
       setTestId(urlTestId);
@@ -58,13 +147,10 @@ function GraciasContent() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
         const data = await res.json();
 
-        console.log("Intento:", attempts, "Resultado:", data);
-
         if (data.testId) {
           clearInterval(interval);
           setTestId(data.testId);
 
-          // ahora sí cargar resultado real
           const resultRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${data.testId}`);
           if (resultRes.ok) {
             const resultData = await resultRes.json();
@@ -80,28 +166,29 @@ function GraciasContent() {
       } catch (err) {
         console.error("Error resolving transaction:", err);
       }
-    }, 2000); // cada 2 segundos
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [wompiId, urlTestId]);
 
+  // 2. Poll for the final score if testId is resolved
   useEffect(() => {
     if (!isTestIdValid) return;
 
     let intervalId: NodeJS.Timeout;
-
-    const fetchResult = async () => {
+    
+    const checkResult = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
-
+        
         if (res.ok) {
           const data = await res.json();
-          setResult(data);
-          setLoading(false);
-          clearInterval(intervalId);
+          if (data?.overall_score && data.overall_score > 0) {
+            setResult(data);
+            setLoading(false);
+            clearInterval(intervalId);
+          }
         } else if (res.status === 403 || res.status === 404) {
-          // Si es 403 significa "Resultado bloqueado. Pago requerido."
-          // Seguimos intentando hasta que el webhook lo desbloquee.
           console.log("Aún bloqueado. Reintentando...");
         } else {
           setError("Ocurrió un error al obtener tu resultado.");
@@ -113,27 +200,24 @@ function GraciasContent() {
       }
     };
 
-    if (res.ok) {
-      const data = await res.json();
+    intervalId = setInterval(checkResult, 2000);
 
-      // 🔥 FIX CLAVE: solo avanzar cuando el score realmente exista
-      if (data?.overall_score && data.overall_score > 0) {
-        setResult(data);
-        setLoading(false);
-        clearInterval(intervalId);
-      } else {
-        console.log("Resultado aún no listo...");
-      }
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+      setLoading((prev) => {
+        if (prev && !result) {
+          setError("El tiempo de espera se agotó. Por favor, refresca la página si ya realizaste el pago.");
+          return false;
+        }
+        return prev;
+      });
+    }, 60000);
 
-    } else if (res.status === 403 || res.status === 404) {
-      console.log("Aún bloqueado. Reintentando...");
-    } else {
-      setError("Ocurrió un error al obtener tu resultado.");
-      setLoading(false);
+    return () => {
       clearInterval(intervalId);
       clearTimeout(timeoutId);
     };
-  }, [testId]);
+  }, [testId, isTestIdValid, result]);
 
   const handleDownloadReport = async () => {
     if (!testId) return;
@@ -183,209 +267,286 @@ function GraciasContent() {
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // UI RENDERING
+  // ---------------------------------------------------------------------------
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Pago en confirmación</h2>
-        <p className="text-slate-600">Estamos verificando tu transacción y calculando tu VisaScore...</p>
+      <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#0A3161] mb-6 shadow-sm"></div>
+        <h2 className="text-2xl font-bold text-[#0A3161] mb-2 tracking-tight">Procesando tu análisis</h2>
+        <p className="text-slate-600 font-medium text-center">Estamos verificando tu transacción y calculando tu VisaScore...</p>
       </div>
     );
   }
-};
 
   if (!isTestIdValid) {
     return (
-      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
-        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-6" />
-        <h2 className="text-2xl font-bold text-[#050B14] mb-2 text-center">Pago recibido correctamente.</h2>
-        <p className="text-slate-600 text-center">Estamos procesando tu resultado.</p>
-        <Link href="/" className="mt-8 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-          Volver al inicio
-        </Link>
+      <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-10 rounded-[24px] shadow-[0_10px_25px_rgba(0,0,0,0.05)] text-center max-w-md w-full border border-slate-100">
+          <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-[#0A3161] mb-2 tracking-tight">Pago Recibido</h2>
+          <p className="text-slate-600 mb-8 font-medium">Estamos procesando tu resultado. Esto tomará sólo un momento.</p>
+          <Link href="/" className="inline-flex w-full items-center justify-center bg-[#0A3161] hover:bg-[#08264A] text-white px-6 py-4 rounded-[14px] font-bold transition-all shadow-[0_4px_14px_rgba(10,49,97,0.15)] hover:shadow-[0_6px_20px_rgba(10,49,97,0.2)]">
+            Volver al inicio
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4">
-        <XCircle className="h-16 w-16 text-red-500 mb-6" />
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Algo salió mal</h2>
-        <p className="text-slate-600 mb-6 text-center max-w-md">{error}</p>
-        <Link href="/" className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-          Volver al inicio
-        </Link>
+      <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
+         <div className="bg-white p-10 rounded-[24px] shadow-[0_10px_25px_rgba(0,0,0,0.05)] text-center max-w-md w-full border border-slate-100">
+          <XCircle className="h-16 w-16 text-[#B31942] mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-[#0A3161] mb-2 tracking-tight">Algo salió mal</h2>
+          <p className="text-slate-600 mb-8 max-w-md mx-auto font-medium">{error}</p>
+          <Link href="/" className="inline-flex w-full items-center justify-center bg-[#0A3161] hover:bg-[#08264A] text-white px-6 py-4 rounded-[14px] font-bold transition-all shadow-[0_4px_14px_rgba(10,49,97,0.15)] hover:shadow-[0_6px_20px_rgba(10,49,97,0.2)]">
+            Volver al inicio
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!result) return null;
 
+  const catDetails = getCategoryDetails(result.category);
+
   return (
-    <div className="min-h-screen bg-[#FDFDFD] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#050B14] tracking-tight">
-            ¡Pago confirmado! Aquí tienes tu VisaScore
+    <div className="min-h-screen bg-[#F4F6F8] py-16 px-4 sm:px-6 lg:px-8 font-sans selection:bg-[#0A3161] selection:text-white">
+      <div className="max-w-4xl mx-auto space-y-8 tracking-tight">
+        
+        {/* Header Section */}
+        <div className="text-center space-y-3 mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-2 shadow-sm">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-[#0A3161] tracking-tight">
+            Análisis Consular Completado
           </h1>
-          <p className="text-lg text-slate-600 mt-4">
-            Hemos analizado tu perfil con la metodología Consular actual.
+          <p className="text-lg text-slate-500 font-medium max-w-2xl mx-auto mt-4 px-4">
+            Hemos evaluado tu perfil con precisión estadística. Tus resultados oficiales han sido generados.
           </p>
         </div>
 
-const timeoutId = setTimeout(() => {
-  clearInterval(intervalId);
-  if (loading && !result) {
-    setError("El tiempo de espera se agotó. Por favor, refresca la página si ya realizaste el pago.");
-    setLoading(false);
-  }
-}, 60000);
-
-return () => {
-  clearInterval(intervalId);
-  clearTimeout(timeoutId);
-};
-```
-
-}, [testId]);
-
-const handleDownloadReport = async () => {
-if (!testId) return;
-setDownloading(true);
-try {
-const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/generate/${testId}`, {
-method: "POST"
-});
-if (!res.ok) throw new Error("No se pudo descargar el reporte");
-
-```
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `VisaScore_Report_${testId}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-} catch (err) {
-  console.error(err);
-  alert("Hubo un error al generar tu PDF. Inténtalo de nuevo.");
-} finally {
-  setDownloading(false);
-}
-```
-
-};
-
-const handleSendEmail = async (e: React.FormEvent) => {
-e.preventDefault();
-if (!testId || !email) return;
-setEmailStatus("loading");
-
-```
-try {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send/${testId}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email })
-  });
-
-  if (!res.ok) throw new Error("Error al enviar el correo");
-  setEmailStatus("success");
-} catch (err) {
-  console.error(err);
-  setEmailStatus("error");
-}
-```
-
-          {/* Probabilidad */}
-          <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-2">
-              Probabilidad de Aprobación
+        {/* 1. Main Score & Risk Grid (SCORE AS HERO) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Card: Hero Score */}
+          <div className="bg-white rounded-[24px] p-10 border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center text-center group transition-all duration-300 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] relative overflow-hidden">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-10 z-10">
+              Puntaje Crediticio Consular
             </h3>
-            <div className="text-5xl font-black text-[#050B14]">
-              {result.approval_probability}%
+            <div className="z-10">
+              <CircularGauge score={result.overall_score} color={catDetails.color} />
+            </div>
+            <p className="mt-8 text-sm font-medium text-slate-500 max-w-[250px] z-10">
+              Calculado usando métricas estandarizadas de evaluación.
+            </p>
+          </div>
+
+          {/* Card: Risk Assessment (FIX SCORE VS PROBABILITY PERCEPTION) */}
+          <div className="bg-white rounded-[24px] p-10 border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center text-center group transition-all duration-300 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)]">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-8">
+              Riesgo y Probabilidad
+            </h3>
+            
+            <div className={`flex items-center justify-center w-24 h-24 rounded-full mb-6 transition-transform group-hover:scale-105 duration-300 ${catDetails.bg}`}>
+              {catDetails.icon}
             </div>
 
-            <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+            <h2 className={`text-2xl md:text-3xl font-black mb-3 leading-tight ${catDetails.text}`}>
+              {catDetails.label}
+            </h2>
+            
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 mb-4 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-1000 ease-out ${result.category === 'HIGH' ? 'bg-green-500' :
-                    result.category === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}
-                style={{ width: `${result.approval_probability}%` }}
+                className={`h-full rounded-full transition-all duration-1000 ease-out`}
+                style={{ width: `${result.approval_probability}%`, backgroundColor: catDetails.color }}
               ></div>
             </div>
+
+            <p className="text-slate-500 font-medium leading-relaxed mt-2 text-sm max-w-[280px]">
+              Basado en data empírica, esto representa tu posición estadística actual frente a las métricas consulares.
+            </p>
           </div>
         </div>
 
-if (loading) {
-return ( <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4"> <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div> <h2 className="text-2xl font-bold text-slate-800 mb-2">Pago en confirmación</h2> <p className="text-slate-600">Estamos verificando tu transacción y calculando tu VisaScore...</p> </div>
-);
-}
-
-if (error) {
-return ( <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4"> <XCircle className="h-16 w-16 text-red-500 mb-6" /> <h2 className="text-2xl font-bold text-slate-800 mb-2">Algo salió mal</h2> <p className="text-slate-600 mb-6 text-center max-w-md">{error}</p> <Link href="/" className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-Volver al inicio </Link> </div>
-);
-}
-
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl font-bold text-[#050B14] mb-2">Descarga tu PDF Oficial</h3>
-            <p className="text-slate-600 text-sm">
-              Obtén un informe detallado con todo tu análisis, simulación de mejoras y consejos para la entrevista.
+        {/* 2. Core Analysis Summary (REWRITE “FORTALEZAS / ANALYSIS” BLOCK) */}
+        <div className="bg-white rounded-[24px] p-8 md:p-12 border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.05)] my-6">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <ShieldCheck className="w-7 h-7 text-[#0A3161]" />
+            <h2 className="text-2xl font-extrabold text-[#0A3161] tracking-tight">Reporte de Inteligencia Consular</h2>
+          </div>
+          
+          <div className="bg-[#F4F6F8] rounded-[16px] p-8 border border-slate-200/60 mb-10 text-center md:text-left">
+            <p className="text-[#050B14] leading-relaxed font-semibold text-[1.05rem]">
+              Your profile shows factors that may negatively impact consular approval. 
+              Key areas for improvement have been identified in our detailed analysis.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div className="bg-green-50/50 rounded-[16px] p-6 border border-green-100/50">
+              <h3 className="text-base font-bold text-green-800 mb-4 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                Fortalezas Actuales
+              </h3>
+              {result.strengths && result.strengths.length > 0 ? (
+                <ul className="space-y-3">
+                  {result.strengths.map((s, i) => (
+                    <li key={i} className="flex items-start">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 mr-3 flex-shrink-0" />
+                      <span className="text-green-900/80 font-medium text-sm leading-relaxed">{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-green-900/50 italic text-sm font-medium">No se identificaron fortalezas significativas.</p>
+              )}
+            </div>
+
+            <div className="bg-red-50/50 rounded-[16px] p-6 border border-red-100/50">
+              <h3 className="text-base font-bold text-red-800 mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Áreas de Riesgo
+              </h3>
+              {result.weaknesses && result.weaknesses.length > 0 ? (
+                <ul className="space-y-3">
+                  {result.weaknesses.map((w, i) => (
+                    <li key={i} className="flex items-start">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#B31942] mt-2 mr-3 flex-shrink-0" />
+                      <span className="text-red-900/80 font-medium text-sm leading-relaxed">{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-red-900/50 italic text-sm font-medium">No se identificaron riesgos significativos.</p>
+              )}
+            </div>
+          </div>
+
+          {/* 3. CTA Anchor (ENHANCE CTA) */}
+          <div className="text-center mt-12 mb-4">
+            <Link 
+               href="#improvement-plan" 
+               className="group inline-flex items-center justify-center bg-[#0A3161] hover:bg-[#08264A] text-white px-10 py-5 rounded-[16px] text-lg font-bold transition-all duration-300 shadow-[0_8px_20px_rgba(10,49,97,0.2)] hover:shadow-[0_12px_25px_rgba(10,49,97,0.3)] hover:-translate-y-1"
+            >
+              View my improvement plan
+              <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+            </Link>
+          </div>
+        </div>
+
+        {/* 4. Actionable Recommendations (Plan de mejora) */}
+        {result.recommendations && result.recommendations.length > 0 && (
+          <div id="improvement-plan" className="bg-[#0A3161] rounded-[24px] p-10 md:p-14 shadow-[0_20px_40px_rgba(10,49,97,0.2)] mt-8 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#B31942]/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+            
+            <h3 className="text-2xl md:text-3xl font-extrabold mb-8 flex items-center tracking-tight">
+              <span className="bg-white/10 p-3 rounded-2xl mr-5 border border-white/10 shadow-inner">
+                <ShieldCheck className="w-7 h-7 text-blue-100" />
+              </span>
+              Strategic Improvement Plan
+            </h3>
+            
+            <ul className="space-y-4 relative z-10 max-w-3xl">
+              {result.recommendations.map((rec, i) => (
+                <li key={i} className="flex items-start bg-white/5 p-5 md:p-6 rounded-[16px] border border-white/10 hover:bg-white/10 transition-all duration-300">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 text-white font-black text-sm mr-5 flex-shrink-0 shadow-inner border border-blue-400/20">
+                    {i + 1}
+                  </div>
+                  <span className="text-blue-50/90 font-medium leading-relaxed pt-1 text-base md:text-lg">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 5. PDF Download Section (UPGRADE PDF DOWNLOAD SECTION) */}
+        <div className="bg-gradient-to-br from-white to-[#F8FAFC] border-2 border-[#0A3161]/5 rounded-[24px] p-8 md:p-12 shadow-[0_15px_30px_rgba(0,0,0,0.04)] flex flex-col lg:flex-row items-center justify-between gap-10 group mt-8">
+          <div className="flex-1 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8">
+            <div className="flex items-center justify-center w-20 h-20 rounded-[20px] bg-[#0A3161]/5 border border-[#0A3161]/10 text-[#0A3161] group-hover:scale-105 group-hover:bg-[#0A3161]/10 transition-all duration-300 flex-shrink-0">
+              <FileText className="w-10 h-10" />
+            </div>
+            <div>
+              <div className="inline-flex items-center px-3 py-1.5 mb-4 bg-[#B31942]/10 text-[#B31942] text-xs font-bold uppercase tracking-widest rounded-lg">
+                Official Document
+              </div>
+              <h3 className="text-2xl md:text-3xl font-extrabold text-[#0A3161] mb-3 tracking-tight">Download Full Report</h3>
+              <p className="text-slate-500 font-medium text-base md:text-lg leading-relaxed max-w-xl">
+                Official-style consular report based on real evaluation criteria. Obtain the complete analysis, scoring metrics, and details.
+              </p>
+            </div>
           </div>
           <button
             onClick={handleDownloadReport}
             disabled={downloading}
-            className="w-full md:w-auto flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-4 h-auto text-base font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full lg:w-auto relative overflow-hidden flex items-center justify-center bg-white border-[3px] border-[#0A3161] text-[#0A3161] hover:bg-[#0A3161] hover:text-white rounded-[16px] px-10 py-5 text-lg font-bold transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed group/btn shadow-sm hover:shadow-[0_10px_20px_rgba(10,49,97,0.15)] flex-shrink-0"
           >
-            {downloading ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
-            {downloading ? "Generando..." : "Descargar Reporte Completo"}
+            {downloading ? (
+              <RefreshCw className="mr-3 h-6 w-6 animate-spin" />
+            ) : (
+              <Download className="mr-3 h-6 w-6 group-hover/btn:-translate-y-1 transition-transform" />
+            )}
+            {downloading ? "Generating PDF..." : "Download Report"}
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center max-w-2xl mx-auto">
-          <Mail className="h-10 w-10 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-[#050B14] mb-2">¿Quieres una copia en tu correo?</h3>
-          <p className="text-slate-600 text-sm mb-6">
-            Te enviaremos el reporte completo en formato PDF para que lo guardes.
+        {/* 6. Email Form Section (Visual Upgrade) */}
+        <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.03)] p-10 max-w-2xl mx-auto text-center hover:shadow-[0_15px_30px_rgba(0,0,0,0.06)] transition-all duration-300 mt-8 mb-16">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[20px] bg-slate-50 mb-6 border border-slate-100">
+            <Mail className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-[#0A3161] mb-3 tracking-tight">Save a copy to your email</h3>
+          <p className="text-slate-500 text-base mb-8 font-medium">
+            We'll send the highly detailed PDF report securely to your inbox.
           </p>
-          <form onSubmit={handleSendEmail} className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="email"
-              placeholder="tu@correo.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
+          <form onSubmit={handleSendEmail} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+            <div className="relative flex-1">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-[16px] border-2 border-slate-200 px-6 py-4 focus:outline-none focus:border-[#0A3161] focus:ring-4 focus:ring-[#0A3161]/10 transition-all font-semibold placeholder:text-slate-400 bg-slate-50 focus:bg-white text-[#050B14]"
+              />
+            </div>
             <button
               type="submit"
               disabled={emailStatus === "loading" || emailStatus === "success"}
-              className="rounded-xl px-6 py-3 whitespace-nowrap bg-[#050B14] hover:bg-slate-800 text-white font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              className="rounded-[16px] px-8 py-4 whitespace-nowrap bg-[#0A3161] hover:bg-[#08264A] text-white font-bold text-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(10,49,97,0.15)] hover:shadow-[0_8px_25px_rgba(10,49,97,0.2)] hover:-translate-y-0.5"
             >
-              {emailStatus === "loading" ? "Enviando..." : emailStatus === "success" ? "¡Enviado!" : "Enviar a mi correo"}
+              {emailStatus === "loading" ? "Sending..." : emailStatus === "success" ? "Sent!" : "Send"}
             </button>
           </form>
           {emailStatus === "error" && (
-            <p className="text-red-500 text-sm mt-3">Hubo un error al enviar. Intenta de nuevo.</p>
+            <p className="text-[#B31942] font-semibold text-sm mt-5 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Failed to send. Please try again.
+            </p>
           )}
         </div>
+
       </div>
     </div>
   );
 }
 
 export default function GraciasPage() {
-return (
-<Suspense fallback={ <div className="min-h-screen bg-[#FDFDFD] flex flex-col items-center justify-center p-4"> <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mb-6"></div> <h2 className="text-2xl font-bold text-slate-800 mb-2">Cargando datos...</h2> </div>
-}> <GraciasContent /> </Suspense>
-);
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#0A3161] mb-6 shadow-sm"></div>
+        <h2 className="text-2xl font-bold text-[#0A3161] tracking-tight">Loading interface...</h2>
+      </div>
+    }>
+      <GraciasContent />
+    </Suspense>
+  );
 }
