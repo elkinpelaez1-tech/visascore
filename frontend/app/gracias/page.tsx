@@ -221,11 +221,15 @@ function GraciasContent() {
 
   const handleDownloadReport = async () => {
     if (!testId) return;
+
+    // TODO: The endpoint GET /visa-test/report/:id does NOT exist yet on the backend.
+    // Leaving this TODO as instructed. Once implemented, uncomment the fetch logic below.
+    alert("TODO: GET /visa-test/report/:id endpoint is missing on the backend.");
+    
+    /*
     setDownloading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/generate/${testId}`, {
-        method: "POST"
-      });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/report/${testId}`);
       if (!res.ok) throw new Error("No se pudo descargar el reporte");
 
       const blob = await res.blob();
@@ -243,20 +247,29 @@ function GraciasContent() {
     } finally {
       setDownloading(false);
     }
+    */
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testId || !email) return;
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailStatus("error");
+      return;
+    }
+
     setEmailStatus("loading");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mail/send/${testId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/send-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ testId, email })
       });
 
       if (!res.ok) throw new Error("Error al enviar el correo");
@@ -524,10 +537,16 @@ function GraciasContent() {
               {emailStatus === "loading" ? "Enviando..." : emailStatus === "success" ? "¡Enviado!" : "Enviar"}
             </button>
           </form>
+          {emailStatus === "success" && (
+            <p className="text-green-600 font-semibold text-sm mt-5 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              Reporte enviado correctamente
+            </p>
+          )}
           {emailStatus === "error" && (
             <p className="text-[#B31942] font-semibold text-sm mt-5 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
-              Failed to send. Please try again.
+              Error al enviar. Por favor intenta de nuevo.
             </p>
           )}
         </div>
