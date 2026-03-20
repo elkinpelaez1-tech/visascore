@@ -86,7 +86,7 @@ const getCategoryDetails = (category: string) => {
     case 'HIGH':
       return { 
         color: '#0A3161', 
-        label: 'Perfil Sólido', 
+        label: 'Perfil sólido', 
         bg: 'bg-[#0A3161]/10', 
         text: 'text-[#0A3161]',
         icon: <ShieldCheck className="h-6 w-6 text-[#0A3161]" />
@@ -94,7 +94,7 @@ const getCategoryDetails = (category: string) => {
     case 'MEDIUM':
       return { 
         color: '#F59E0B', 
-        label: 'Riesgo Moderado', 
+        label: 'Riesgo moderado', 
         bg: 'bg-yellow-100', 
         text: 'text-yellow-700',
         icon: <Info className="h-6 w-6 text-yellow-600" />
@@ -103,7 +103,7 @@ const getCategoryDetails = (category: string) => {
     default:
       return { 
         color: '#B31942', 
-        label: 'Alto Riesgo / Baja Probabilidad', 
+        label: 'Alto riesgo / baja probabilidad', 
         bg: 'bg-[#B31942]/10', 
         text: 'text-[#B31942]',
         icon: <AlertTriangle className="h-6 w-6 text-[#B31942]" />
@@ -328,7 +328,7 @@ function GraciasContent() {
             Análisis Consular Completado
           </h1>
           <p className="text-lg text-slate-500 font-medium max-w-2xl mx-auto mt-4 px-4">
-            Hemos evaluado tu perfil con precisión estadística. Tus resultados oficiales han sido generados.
+            Hemos evaluado tu perfil con criterios utilizados en procesos consulares reales e inteligencia algorítmica. Tus resultados han sido generados.
           </p>
         </div>
 
@@ -338,20 +338,20 @@ function GraciasContent() {
           {/* Card: Hero Score */}
           <div className="bg-white rounded-[24px] p-10 border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center text-center group transition-all duration-300 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] relative overflow-hidden">
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-10 z-10">
-              Puntaje Crediticio Consular
+              Puntaje estimado VisaScore
             </h3>
             <div className="z-10">
               <CircularGauge score={result.overall_score} color={catDetails.color} />
             </div>
             <p className="mt-8 text-sm font-medium text-slate-500 max-w-[250px] z-10">
-              Calculado usando métricas estandarizadas de evaluación.
+              Evaluación basada en múltiples estándares utilizados en procesos consulares.
             </p>
           </div>
 
           {/* Card: Risk Assessment (FIX SCORE VS PROBABILITY PERCEPTION) */}
           <div className="bg-white rounded-[24px] p-10 border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center text-center group transition-all duration-300 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)]">
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-8">
-              Riesgo y Probabilidad
+              Riesgo y probabilidad
             </h3>
             
             <div className={`flex items-center justify-center w-24 h-24 rounded-full mb-6 transition-transform group-hover:scale-105 duration-300 ${catDetails.bg}`}>
@@ -370,7 +370,7 @@ function GraciasContent() {
             </div>
 
             <p className="text-slate-500 font-medium leading-relaxed mt-2 text-sm max-w-[280px]">
-              Basado en data empírica, esto representa tu posición estadística actual frente a las métricas consulares.
+              Según este análisis, tu perfil presenta indicadores evaluados bajo criterios consulares.
             </p>
           </div>
         </div>
@@ -384,8 +384,7 @@ function GraciasContent() {
           
           <div className="bg-[#F4F6F8] rounded-[16px] p-8 border border-slate-200/60 mb-10 text-center md:text-left">
             <p className="text-[#050B14] leading-relaxed font-semibold text-[1.05rem]">
-              Your profile shows factors that may negatively impact consular approval. 
-              Key areas for improvement have been identified in our detailed analysis.
+              Tu perfil presenta factores que pueden afectar la aprobación. Hemos identificado áreas clave de mejora dentro de un análisis detallado.
             </p>
           </div>
 
@@ -393,7 +392,7 @@ function GraciasContent() {
             <div className="bg-green-50/50 rounded-[16px] p-6 border border-green-100/50">
               <h3 className="text-base font-bold text-green-800 mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
-                Fortalezas Actuales
+                Fortalezas actuales
               </h3>
               {result.strengths && result.strengths.length > 0 ? (
                 <ul className="space-y-3">
@@ -412,7 +411,7 @@ function GraciasContent() {
             <div className="bg-red-50/50 rounded-[16px] p-6 border border-red-100/50">
               <h3 className="text-base font-bold text-red-800 mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
-                Áreas de Riesgo
+                Áreas de riesgo
               </h3>
               {result.weaknesses && result.weaknesses.length > 0 ? (
                 <ul className="space-y-3">
@@ -435,7 +434,7 @@ function GraciasContent() {
                href="#improvement-plan" 
                className="group inline-flex items-center justify-center bg-[#0A3161] hover:bg-[#08264A] text-white px-10 py-5 rounded-[16px] text-lg font-bold transition-all duration-300 shadow-[0_8px_20px_rgba(10,49,97,0.2)] hover:shadow-[0_12px_25px_rgba(10,49,97,0.3)] hover:-translate-y-1"
             >
-              View my improvement plan
+              Ver cómo mejorar mi aprobación
               <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
             </Link>
           </div>
@@ -475,11 +474,11 @@ function GraciasContent() {
             </div>
             <div>
               <div className="inline-flex items-center px-3 py-1.5 mb-4 bg-[#B31942]/10 text-[#B31942] text-xs font-bold uppercase tracking-widest rounded-lg">
-                Official Document
+                Documento oficial
               </div>
-              <h3 className="text-2xl md:text-3xl font-extrabold text-[#0A3161] mb-3 tracking-tight">Download Full Report</h3>
+              <h3 className="text-2xl md:text-3xl font-extrabold text-[#0A3161] mb-3 tracking-tight">Descargar reporte completo</h3>
               <p className="text-slate-500 font-medium text-base md:text-lg leading-relaxed max-w-xl">
-                Official-style consular report based on real evaluation criteria. Obtain the complete analysis, scoring metrics, and details.
+                Informe consular basado en criterios reales de evaluación. Incluye análisis completo, métricas y recomendaciones.
               </p>
             </div>
           </div>
@@ -493,7 +492,7 @@ function GraciasContent() {
             ) : (
               <Download className="mr-3 h-6 w-6 group-hover/btn:-translate-y-1 transition-transform" />
             )}
-            {downloading ? "Generating PDF..." : "Download Report"}
+            {downloading ? "Generando PDF..." : "Descargar reporte"}
           </button>
         </div>
 
@@ -502,15 +501,15 @@ function GraciasContent() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-[20px] bg-slate-50 mb-6 border border-slate-100">
             <Mail className="h-8 w-8 text-slate-400" />
           </div>
-          <h3 className="text-2xl font-bold text-[#0A3161] mb-3 tracking-tight">Save a copy to your email</h3>
+          <h3 className="text-2xl font-bold text-[#0A3161] mb-3 tracking-tight">Recibe una copia en tu correo</h3>
           <p className="text-slate-500 text-base mb-8 font-medium">
-            We'll send the highly detailed PDF report securely to your inbox.
+            Te enviaremos el reporte detallado directamente a tu bandeja de entrada.
           </p>
           <form onSubmit={handleSendEmail} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
             <div className="relative flex-1">
               <input
                 type="email"
-                placeholder="your@email.com"
+                placeholder="tu@correo.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -522,7 +521,7 @@ function GraciasContent() {
               disabled={emailStatus === "loading" || emailStatus === "success"}
               className="rounded-[16px] px-8 py-4 whitespace-nowrap bg-[#0A3161] hover:bg-[#08264A] text-white font-bold text-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(10,49,97,0.15)] hover:shadow-[0_8px_25px_rgba(10,49,97,0.2)] hover:-translate-y-0.5"
             >
-              {emailStatus === "loading" ? "Sending..." : emailStatus === "success" ? "Sent!" : "Send"}
+              {emailStatus === "loading" ? "Enviando..." : emailStatus === "success" ? "¡Enviado!" : "Enviar"}
             </button>
           </form>
           {emailStatus === "error" && (
@@ -543,7 +542,7 @@ export default function GraciasPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#0A3161] mb-6 shadow-sm"></div>
-        <h2 className="text-2xl font-bold text-[#0A3161] tracking-tight">Loading interface...</h2>
+        <h2 className="text-2xl font-bold text-[#0A3161] tracking-tight">Cargando interfaz...</h2>
       </div>
     }>
       <GraciasContent />
