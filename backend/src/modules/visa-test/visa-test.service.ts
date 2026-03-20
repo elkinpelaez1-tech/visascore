@@ -331,7 +331,7 @@ export class VisaTestService {
       console.log("HTML preview:", htmlContent.slice(0, 500));
 
       const browser = await puppeteer.launch({
-        headless: "new",
+        headless: "new" as any,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
