@@ -1,16 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ScoringService, DS160Profile } from '../scoring/scoring.service';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 @Injectable()
 export class VisaTestService {
   private supabase: any;
+  private resend: Resend;
 
   constructor(private scoringService: ScoringService) {
     this.supabase = createClient(
       process.env.SUPABASE_URL || 'https://placeholder.supabase.co',
       process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
     );
+    this.resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
   }
 
   async submitTest(profile: DS160Profile, userId: string = '00000000-0000-0000-0000-000000000000') {
@@ -141,5 +144,71 @@ export class VisaTestService {
       recommendations: breakdown?.recommendations || [],
       simulations: breakdown?.improvement_simulations || []
     };
+  }
+
+  async sendEmail(testId: string, email: string) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      throw new BadRequestException('Formato de correo inválido');
+    }
+
+    const { data: test, error } = await this.supabase
+      .from('visa_tests')
+      .select('overall_score, metadata')
+      .eq('id', testId)
+      .maybeSingle();
+
+    if (error || !test) {
+      throw new NotFoundException('Test no encontrado');
+    }
+
+    const score = test.overall_score || 0;
+    const level = score > 700 
+      ? 'Perfil sólido' 
+      : score > 400 
+      ? 'Riesgo moderado' 
+      : 'Alto riesgo / baja probabilidad';
+
+    try {
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #0A3161; font-weight: bold;">Tu resultado VisaScore</h2>
+          <p style="font-size: 16px; line-height: 1.5; color: #4A5568;">
+            Hemos evaluado tu perfil con criterios utilizados en procesos consulares reales e inteligencia algorítmica.
+          </p>
+          
+          <div style="background-color: #F4F6F8; padding: 30px; border-radius: 12px; margin: 30px 0; text-align: center; border: 1px solid #E2E8F0;">
+            <p style="margin: 0; font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;">
+              Puntaje estimado
+            </p>
+            <h1 style="font-size: 56px; margin: 15px 0; color: #0A3161; letter-spacing: -1px;">${score}</h1>
+            
+            <p style="margin: 0; font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; margin-top: 25px;">
+              Nivel de Riesgo
+            </p>
+            <h3 style="font-size: 22px; margin: 10px 0 0; color: #B31942; font-weight: 800;">${level}</h3>
+          </div>
+
+          <div style="text-align: center; margin-top: 40px;">
+            <a href="${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://visascore.co'}/gracias?testId=${testId}" 
+               style="background-color: #0A3161; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">
+               Ver mi reporte completo
+            </a>
+          </div>
+        </div>
+      `;
+
+      await this.resend.emails.send({
+        from: 'VisaScore <noreply@visascore.co>',
+        to: email,
+        subject: 'Tu resultado VisaScore',
+        html: htmlBody,
+      });
+
+      return { success: true, message: 'Reporte enviado correctamente' };
+    } catch (err) {
+      console.error('Error enviando email con Resend:', err);
+      throw new InternalServerErrorException('Error interno al enviar el reporte');
+    }
   }
 }

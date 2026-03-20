@@ -20,4 +20,9 @@ export class VisaTestController {
   async getResult(@Param('id') id: string) {
     return this.visaTestService.getResult(id);
   }
+
+  @Post('send-email')
+  async sendEmail(@Body() body: { testId: string; email: string }) {
+    return this.visaTestService.sendEmail(body.testId, body.email);
+  }
 }
