@@ -222,11 +222,6 @@ function GraciasContent() {
   const handleDownloadReport = async () => {
     if (!testId) return;
 
-    // TODO: The endpoint GET /visa-test/report/:id does NOT exist yet on the backend.
-    // Leaving this TODO as instructed. Once implemented, uncomment the fetch logic below.
-    alert("TODO: GET /visa-test/report/:id endpoint is missing on the backend.");
-    
-    /*
     setDownloading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/report/${testId}`);
@@ -236,18 +231,17 @@ function GraciasContent() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `VisaScore_Report_${testId}.pdf`;
+      a.download = "reporte-visascore.pdf";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
       console.error(err);
-      alert("Hubo un error al generar tu PDF. Inténtalo de nuevo.");
+      alert("Hubo un error al descargar tu PDF. Inténtalo de nuevo.");
     } finally {
       setDownloading(false);
     }
-    */
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
