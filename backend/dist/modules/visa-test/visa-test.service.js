@@ -327,11 +327,15 @@ let VisaTestService = class VisaTestService {
       </html>
     `;
         try {
+            console.log("HTML preview:", htmlContent.slice(0, 500));
             const browser = await puppeteer.launch({
+                headless: "new",
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
             const page = await browser.newPage();
-            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+            await page.setContent(htmlContent, {
+                waitUntil: 'domcontentloaded'
+            });
             const pdfBuffer = await page.pdf({
                 format: 'A4',
                 printBackground: true,
@@ -340,9 +344,11 @@ let VisaTestService = class VisaTestService {
             await browser.close();
             return Buffer.from(pdfBuffer);
         }
-        catch (error) {
-            console.error("PDF generation error:", error);
-            throw new common_1.InternalServerErrorException('Error interno al generar el PDF del reporte');
+        catch (err) {
+            const error = err;
+            console.error("PDF generation error:", error?.message);
+            console.error("STACK:", error?.stack);
+            throw new common_1.InternalServerErrorException('Error generating PDF');
         }
     }
 };
