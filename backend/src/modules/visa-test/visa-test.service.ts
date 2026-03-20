@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { ScoringService, DS160Profile } from '../scoring/scoring.service';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import * as puppeteer from 'puppeteer';
 
 @Injectable()
 export class VisaTestService {
@@ -209,6 +210,141 @@ export class VisaTestService {
     } catch (err) {
       console.error('Error enviando email con Resend:', err);
       throw new InternalServerErrorException('Error interno al enviar el reporte');
+    }
+  }
+
+  async generateReportPdf(testId: string): Promise<Buffer> {
+    const { data: test, error } = await this.supabase
+      .from('visa_tests')
+      .select('overall_score, metadata')
+      .eq('id', testId)
+      .maybeSingle();
+
+    if (error || !test) {
+      throw new NotFoundException('Test no encontrado');
+    }
+
+    const { data: breakdown } = await this.supabase
+      .from('visa_score_breakdown')
+      .select('*')
+      .eq('test_id', testId)
+      .maybeSingle();
+
+    const score = test.overall_score || 0;
+    const level = score > 700 
+      ? 'Perfil sólido' 
+      : score > 400 
+      ? 'Riesgo moderado' 
+      : 'Alto riesgo / baja probabilidad';
+
+    const fecha = new Date().toLocaleDateString('es-ES', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+
+    let strengthsHtml = '';
+    if (breakdown?.strengths && breakdown.strengths.length > 0) {
+      strengthsHtml = `
+        <h3 style="color: #0A3161; font-size: 18px; margin-bottom: 10px;">Fortalezas actuales</h3>
+        <ul style="padding-left: 20px; line-height: 1.6; color: #4A5568;">
+          ${breakdown.strengths.map(s => `<li style="margin-bottom: 8px;">${s}</li>`).join('')}
+        </ul>
+      `;
+    }
+
+    let risksHtml = '';
+    if (breakdown?.weaknesses && breakdown.weaknesses.length > 0) {
+      risksHtml = `
+        <h3 style="color: #B31942; font-size: 18px; margin-bottom: 10px;">Áreas de riesgo</h3>
+        <ul style="padding-left: 20px; line-height: 1.6; color: #B31942;">
+          ${breakdown.weaknesses.map(w => `<li style="margin-bottom: 8px;">${w}</li>`).join('')}
+        </ul>
+      `;
+    }
+    
+    let recommendationsHtml = '';
+    if (breakdown?.recommendations && breakdown.recommendations.length > 0) {
+      recommendationsHtml = `
+        <div style="margin-top: 30px; background-color: #0A3161; color: white; padding: 30px; border-radius: 12px;">
+          <h3 style="color: white; margin-top: 0; font-size: 20px;">Plan de mejora estratégico</h3>
+          <ol style="padding-left: 20px; line-height: 1.6;">
+            ${breakdown.recommendations.map(r => `<li style="margin-bottom: 10px;">${r}</li>`).join('')}
+          </ol>
+        </div>
+      `;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
+            .header { border-bottom: 3px solid #0A3161; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: baseline; }
+            .title { color: #0A3161; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+            .date { color: #718096; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+            .message { font-size: 16px; line-height: 1.6; color: #4A5568; margin-bottom: 30px; background: #F8FAFC; padding: 20px; border-radius: 8px; border-left: 4px solid #0A3161; font-weight: 500;}
+            .score-box { background-color: #F4F6F8; border: 1px solid #E2E8F0; border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 40px; }
+            .score-label { text-transform: uppercase; letter-spacing: 2px; color: #718096; font-size: 12px; margin: 0; font-weight: bold; }
+            .score-value { font-size: 80px; font-weight: 900; color: #0A3161; margin: 15px 0; letter-spacing: -2px;}
+            .risk-value { font-size: 24px; font-weight: 900; color: #B31942; margin: 0; }
+            .section { margin-bottom: 30px; }
+            .grid { display: flex; gap: 40px; margin-top: 20px; }
+            .col { flex: 1; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="title">Reporte Consular VisaScore</h1>
+            <span class="date">${fecha}</span>
+          </div>
+
+          <div class="message">
+            Hemos evaluado tu perfil con criterios utilizados en procesos consulares reales e inteligencia algorítmica.
+          </div>
+
+          <div class="score-box">
+            <p class="score-label">Puntaje Estimado VisaScore</p>
+            <div class="score-value">${score}</div>
+            <p class="score-label" style="margin-top: 20px;">Nivel de Riesgo y Probabilidad</p>
+            <div class="risk-value">${level}</div>
+          </div>
+
+          <div class="section">
+            <h2 style="color: #0A3161; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; font-size: 22px;">Resumen del análisis</h2>
+            <div class="grid">
+              <div class="col">${strengthsHtml}</div>
+              <div class="col">${risksHtml}</div>
+            </div>
+            ${recommendationsHtml}
+          </div>
+          
+          <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #A0AEC0; border-top: 1px solid #E2E8F0; padding-top: 20px;">
+            Este reporte oficial es generado de forma automatizada por el motor de VisaScore.<br/>
+            ID de Análisis: ${testId}
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      const browser = await puppeteer.launch({ 
+        headless: true, 
+        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+      });
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await page.pdf({ 
+        format: 'A4', 
+        printBackground: true, 
+        margin: { top: '40px', bottom: '40px', left: '40px', right: '40px' } 
+      });
+      await browser.close();
+      
+      return Buffer.from(pdfBuffer);
+    } catch (err) {
+      console.error('Error Generando PDF con Puppeteer:', err);
+      throw new InternalServerErrorException('Error interno al generar el PDF del reporte');
     }
   }
 }

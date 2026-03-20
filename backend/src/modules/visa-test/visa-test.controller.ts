@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Header, StreamableFile } from '@nestjs/common';
 import { VisaTestService } from './visa-test.service';
 import type { DS160Profile } from '../scoring/scoring.service';
 
@@ -19,6 +19,14 @@ export class VisaTestController {
   @Get('result/:id')
   async getResult(@Param('id') id: string) {
     return this.visaTestService.getResult(id);
+  }
+
+  @Get('report/:id')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"')
+  async getReport(@Param('id') id: string): Promise<StreamableFile> {
+    const pdfBuffer = await this.visaTestService.generateReportPdf(id);
+    return new StreamableFile(pdfBuffer);
   }
 
   @Post('send-email')
