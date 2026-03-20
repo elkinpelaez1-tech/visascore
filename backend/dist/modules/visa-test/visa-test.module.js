@@ -10,12 +10,13 @@ exports.VisaTestModule = void 0;
 const common_1 = require("@nestjs/common");
 const visa_test_service_1 = require("./visa-test.service");
 const visa_test_controller_1 = require("./visa-test.controller");
+const scoring_service_1 = require("../scoring/scoring.service");
 let VisaTestModule = class VisaTestModule {
 };
 exports.VisaTestModule = VisaTestModule;
 exports.VisaTestModule = VisaTestModule = __decorate([
     (0, common_1.Module)({
-        providers: [visa_test_service_1.VisaTestService],
+        providers: [visa_test_service_1.VisaTestService, scoring_service_1.ScoringService],
         controllers: [visa_test_controller_1.VisaTestController]
     })
 ], VisaTestModule);

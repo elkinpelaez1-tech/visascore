@@ -60,65 +60,94 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         this.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL || 'https://placeholder.supabase.co', process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder');
     }
     async createPayment(testId) {
-        this.logger.log(`Initiating payment for test ${testId}`);
+        const { data: existing } = await this.supabase
+            .from('visa_tests')
+            .select('id')
+            .eq('id', testId)
+            .single();
+        if (!existing) {
+            await this.supabase.from('visa_tests').insert({
+                id: testId,
+                status: 'pending'
+            });
+        }
+        const baseUrl = process.env.CHECKOUT_UI_URL;
+        const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
+        const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
         return {
-            paymentUrl: `${process.env.CHECKOUT_UI_URL}${testId}`
+            paymentUrl: `${baseUrl}?reference=${testId}&redirect-url=${redirectUrl}`
         };
     }
-    async handleWebhook(body, signature) {
-        this.logger.log('Payment webhook received');
-        if (!this.isValidWompiSignature(body, signature)) {
-            this.logger.warn('Invalid Wompi signature received');
-            throw new common_1.BadRequestException('Invalid signature');
+    async handleWebhook(body) {
+        this.logger.log('Webhook Wompi recibido');
+        const signature = body.signature?.checksum;
+        if (body.event !== 'transaction.updated') {
+            return { received: true, ignored: true };
         }
-        const { data: transaction } = body;
+        const transaction = body.data?.transaction;
+        if (!transaction) {
+            throw new common_1.BadRequestException('Transacción inválida');
+        }
         const testId = transaction.reference;
         const status = transaction.status;
+        const { data: existing } = await this.supabase
+            .from('payments')
+            .select('id')
+            .eq('wompi_transaction_id', transaction.id)
+            .single();
+        if (existing) {
+            this.logger.log(`Transacción ya registrada: ${transaction.id}`);
+            return { received: true };
+        }
+        await this.supabase.from('payments').insert({
+            test_id: testId,
+            wompi_transaction_id: transaction.id,
+            amount: transaction.amount_in_cents / 100,
+            status: status.toLowerCase(),
+            payment_method: transaction.payment_method_type,
+            raw_webhook_data: body
+        });
         if (status === 'APPROVED') {
-            this.logger.log(`Payment APPROVED for test ${testId}`);
-            const { data: existingPayment } = await this.supabase
-                .from('payments')
-                .select('id')
-                .eq('wompi_transaction_id', transaction.id)
-                .single();
-            if (existingPayment) {
-                this.logger.log(`Payment ${transaction.id} already processed. Skipping.`);
-                return { received: true, deduplicated: true };
-            }
+            this.logger.log(`Pago aprobado para test ${testId}`);
             await this.supabase
                 .from('visa_tests')
                 .update({ status: 'paid' })
                 .eq('id', testId);
-            await this.supabase.from('payments').insert({
-                test_id: testId,
-                wompi_transaction_id: transaction.id,
-                amount: transaction.amount_in_cents / 100,
-                status: 'approved',
-                payment_method: transaction.payment_method_type,
-                raw_webhook_data: body
-            });
             const { data: test } = await this.supabase
                 .from('visa_tests')
                 .select('*, profiles(email)')
                 .eq('id', testId)
                 .single();
-            if (test && test.profiles?.email) {
-                this.logger.log(`Triggering report generation and email for ${test.profiles.email}`);
+            if (test?.profiles?.email) {
                 const pdfBuffer = await this.reportsService.generatePdf(testId);
                 await this.mailService.sendResultEmail(test.profiles.email, testId, test.overall_score, pdfBuffer);
             }
         }
-        else {
-            this.logger.log(`Payment status for ${testId}: ${status}`);
-        }
         return { received: true };
     }
     isValidWompiSignature(body, signature) {
-        const { data: transaction, timestamp } = body;
-        const secret = process.env.WOMPI_EVENTS_SECRET;
-        const rawString = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${secret}`;
-        const hash = crypto.SHA256(rawString).toString();
+        const transaction = body.data?.transaction;
+        const timestamp = body.timestamp;
+        const secret = process.env.WOMPI_WEBHOOK_SECRET;
+        if (!transaction || !timestamp || !secret)
+            return false;
+        const raw = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${secret}`;
+        const hash = crypto.SHA256(raw).toString();
         return hash === signature;
+    }
+    async resolveTransaction(transactionId) {
+        return { message: 'ok', transactionId };
+    }
+    async debugTransaction(transactionId) {
+        return { message: 'debug ok', transactionId };
+    }
+    async findByTransactionId(transactionId) {
+        const { data } = await this.supabase
+            .from('payments')
+            .select('*')
+            .eq('wompi_transaction_id', transactionId)
+            .maybeSingle();
+        return data;
     }
 };
 exports.PaymentsService = PaymentsService;

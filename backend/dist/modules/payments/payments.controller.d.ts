@@ -3,14 +3,20 @@ export declare class PaymentsController {
     private readonly paymentsService;
     private readonly logger;
     constructor(paymentsService: PaymentsService);
+    resolve(transactionId: string): Promise<{
+        message: string;
+    }>;
+    debug(transactionId: string): Promise<{
+        message: string;
+    }>;
     create(testId: string): Promise<{
         paymentUrl: string;
     }>;
-    webhook(body: any, signature: string): Promise<{
+    webhook(body: any): Promise<{
         received: boolean;
-        deduplicated: boolean;
+        ignored: boolean;
     } | {
         received: boolean;
-        deduplicated?: undefined;
+        ignored?: undefined;
     }>;
 }

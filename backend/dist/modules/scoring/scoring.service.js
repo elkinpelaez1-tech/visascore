@@ -59,6 +59,11 @@ let ScoringService = class ScoringService {
             score += 50;
         if (p.isCompanyRegistered)
             score += 30;
+        const payer = (p.tripPayer || '').toLowerCase();
+        if (payer === 'yo mismo' || payer === 'mi empresa')
+            score += 50;
+        else if (payer === 'familiar en ee.uu.')
+            score -= 50;
         return Math.min(250, score);
     }
     calculateTies(p) {
@@ -89,7 +94,21 @@ let ScoringService = class ScoringService {
             score -= 200;
         if (p.familyInUs)
             score -= 50;
-        return Math.max(0, Math.min(200, score));
+        if (p.hasCommunicableDisease)
+            score -= 500;
+        if (p.hasMentalPhysicalDisorder)
+            score -= 500;
+        if (p.hasDrugAddiction)
+            score -= 500;
+        if (p.hasCriminalRecord)
+            score -= 500;
+        if (p.hasDeportationHistory)
+            score -= 500;
+        if (p.intendedDurationDays > 30)
+            score -= 50;
+        if (p.allowsSocialMediaCheck === false)
+            score -= 100;
+        return score;
     }
     calculatePersonal(p) {
         let score = 0;
@@ -121,6 +140,20 @@ let ScoringService = class ScoringService {
             w.push('Antecedente de visa negada');
         if (p.familyInUs)
             w.push('Vínculos familiares en EE.UU. (mayor riesgo migratorio)');
+        if (p.hasCommunicableDisease)
+            w.push('ALERTA: Enfermedad transmisible detectada (posible inadmisibilidad sanitaria)');
+        if (p.hasMentalPhysicalDisorder)
+            w.push('ALERTA: Trastorno mental o físico detectado');
+        if (p.hasDrugAddiction)
+            w.push('ALERTA: Historial de adicción a drogas (inadmisibilidad)');
+        if (p.hasCriminalRecord)
+            w.push('ALERTA: Antecedentes penales detectados (fuerte causa de rechazo)');
+        if (p.hasDeportationHistory)
+            w.push('ALERTA: Historial de deportación previa de EE.UU.');
+        if (p.intendedDurationDays > 30)
+            w.push('Duración del viaje planificada excesiva para turismo convencional');
+        if (p.allowsSocialMediaCheck === false)
+            w.push('La negativa a revisión de redes sociales genera gran sospecha consular');
         return w;
     }
     getRecommendations(p, b) {

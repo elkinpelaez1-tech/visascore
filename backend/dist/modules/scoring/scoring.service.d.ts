@@ -19,6 +19,17 @@ export interface DS160Profile {
     hasOverstayHistory: boolean;
     familyInUs: boolean;
     travelPurpose: string;
+    hasCommunicableDisease: boolean;
+    hasMentalPhysicalDisorder: boolean;
+    hasDrugAddiction: boolean;
+    hasCriminalRecord: boolean;
+    hasDeportationHistory: boolean;
+    tripPayer: string;
+    socialMediaPlatforms: string;
+    allowsSocialMediaCheck: boolean;
+    intendedCities: string;
+    intendedDurationDays: number;
+    countriesVisited: string;
 }
 export interface ScoringResult {
     totalScore: number;

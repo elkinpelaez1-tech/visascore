@@ -2,6 +2,7 @@ import { ScoringService, DS160Profile } from '../scoring/scoring.service';
 export declare class VisaTestService {
     private scoringService;
     private supabase;
+    private resend;
     constructor(scoringService: ScoringService);
     submitTest(profile: DS160Profile, userId?: string): Promise<{
         testId: any;
@@ -29,4 +30,9 @@ export declare class VisaTestService {
         recommendations: any;
         simulations: any;
     }>;
+    sendEmail(testId: string, email: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    generateReportPdf(testId: string): Promise<Buffer>;
 }

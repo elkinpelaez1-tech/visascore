@@ -23,11 +23,18 @@ let VisaTestController = class VisaTestController {
     async submit(profile) {
         return this.visaTestService.submitTest(profile);
     }
+    async getReport(id) {
+        const pdfBuffer = await this.visaTestService.generateReportPdf(id);
+        return new common_1.StreamableFile(pdfBuffer);
+    }
     async getStatus(id) {
         return this.visaTestService.getStatus(id);
     }
     async getResult(id) {
         return this.visaTestService.getResult(id);
+    }
+    async sendEmail(body) {
+        return this.visaTestService.sendEmail(body.testId, body.email);
     }
 };
 exports.VisaTestController = VisaTestController;
@@ -38,6 +45,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], VisaTestController.prototype, "submit", null);
+__decorate([
+    (0, common_1.Get)('report/:id'),
+    (0, common_1.Header)('Content-Type', 'application/pdf'),
+    (0, common_1.Header)('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], VisaTestController.prototype, "getReport", null);
 __decorate([
     (0, common_1.Get)(':id/status'),
     __param(0, (0, common_1.Param)('id')),
@@ -52,6 +68,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], VisaTestController.prototype, "getResult", null);
+__decorate([
+    (0, common_1.Post)('send-email'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], VisaTestController.prototype, "sendEmail", null);
 exports.VisaTestController = VisaTestController = __decorate([
     (0, common_1.Controller)('visa-test'),
     __metadata("design:paramtypes", [visa_test_service_1.VisaTestService])

@@ -22,16 +22,36 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
     }
+    async resolve(transactionId) {
+        return { message: 'ok' };
+    }
+    async debug(transactionId) {
+        return { message: 'ok' };
+    }
     async create(testId) {
         this.logger.log(`Payment creation requested for test: ${testId}`);
         return this.paymentsService.createPayment(testId);
     }
-    async webhook(body, signature) {
-        this.logger.log('Wompi webhook received');
-        return this.paymentsService.handleWebhook(body, signature);
+    async webhook(body) {
+        this.logger.log('Webhook Wompi recibido');
+        return this.paymentsService.handleWebhook(body);
     }
 };
 exports.PaymentsController = PaymentsController;
+__decorate([
+    (0, common_1.Get)('resolve/:transactionId'),
+    __param(0, (0, common_1.Param)('transactionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "resolve", null);
+__decorate([
+    (0, common_1.Get)('debug/:transactionId'),
+    __param(0, (0, common_1.Param)('transactionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "debug", null);
 __decorate([
     (0, common_1.Post)('create'),
     __param(0, (0, common_1.Body)('testId')),
@@ -42,9 +62,8 @@ __decorate([
 __decorate([
     (0, common_1.Post)('webhook'),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Headers)('x-event-checksum')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "webhook", null);
 exports.PaymentsController = PaymentsController = PaymentsController_1 = __decorate([

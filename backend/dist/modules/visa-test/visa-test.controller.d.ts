@@ -1,3 +1,4 @@
+import { StreamableFile } from '@nestjs/common';
 import { VisaTestService } from './visa-test.service';
 import type { DS160Profile } from '../scoring/scoring.service';
 export declare class VisaTestController {
@@ -8,6 +9,7 @@ export declare class VisaTestController {
         status: string;
         message: string;
     }>;
+    getReport(id: string): Promise<StreamableFile>;
     getStatus(id: string): Promise<any>;
     getResult(id: string): Promise<{
         overall_score: any;
@@ -24,5 +26,12 @@ export declare class VisaTestController {
         weaknesses: any;
         recommendations: any;
         simulations: any;
+    }>;
+    sendEmail(body: {
+        testId: string;
+        email: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

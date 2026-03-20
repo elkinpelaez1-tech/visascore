@@ -9,12 +9,21 @@ export declare class PaymentsService {
     createPayment(testId: string): Promise<{
         paymentUrl: string;
     }>;
-    handleWebhook(body: any, signature: string): Promise<{
+    handleWebhook(body: any): Promise<{
         received: boolean;
-        deduplicated: boolean;
+        ignored: boolean;
     } | {
         received: boolean;
-        deduplicated?: undefined;
+        ignored?: undefined;
     }>;
     private isValidWompiSignature;
+    resolveTransaction(transactionId: string): Promise<{
+        message: string;
+        transactionId: string;
+    }>;
+    debugTransaction(transactionId: string): Promise<{
+        message: string;
+        transactionId: string;
+    }>;
+    findByTransactionId(transactionId: string): Promise<any>;
 }

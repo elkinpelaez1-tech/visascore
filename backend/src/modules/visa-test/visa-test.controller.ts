@@ -11,6 +11,14 @@ export class VisaTestController {
     return this.visaTestService.submitTest(profile);
   }
 
+  @Get('report/:id')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"')
+  async getReport(@Param('id') id: string): Promise<StreamableFile> {
+    const pdfBuffer = await this.visaTestService.generateReportPdf(id);
+    return new StreamableFile(pdfBuffer);
+  }
+
   @Get(':id/status')
   async getStatus(@Param('id') id: string) {
     return this.visaTestService.getStatus(id);
@@ -19,14 +27,6 @@ export class VisaTestController {
   @Get('result/:id')
   async getResult(@Param('id') id: string) {
     return this.visaTestService.getResult(id);
-  }
-
-  @Get('report/:id')
-  @Header('Content-Type', 'application/pdf')
-  @Header('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"')
-  async getReport(@Param('id') id: string): Promise<StreamableFile> {
-    const pdfBuffer = await this.visaTestService.generateReportPdf(id);
-    return new StreamableFile(pdfBuffer);
   }
 
   @Post('send-email')
