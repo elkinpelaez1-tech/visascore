@@ -328,9 +328,8 @@ export class VisaTestService {
     `;
 
     try {
-      const browser = await puppeteer.launch({ 
-        headless: true, 
-        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+      const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -342,8 +341,8 @@ export class VisaTestService {
       await browser.close();
       
       return Buffer.from(pdfBuffer);
-    } catch (err) {
-      console.error('Error Generando PDF con Puppeteer:', err);
+    } catch (error) {
+      console.error("PDF generation error:", error);
       throw new InternalServerErrorException('Error interno al generar el PDF del reporte');
     }
   }
