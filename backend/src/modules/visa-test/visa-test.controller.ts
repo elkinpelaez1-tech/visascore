@@ -12,11 +12,13 @@ export class VisaTestController {
   }
 
   @Get('report/:id')
-  @Header('Content-Type', 'application/pdf')
-  @Header('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"')
   async getReport(@Param('id') id: string): Promise<StreamableFile> {
     const pdfBuffer = await this.visaTestService.generateReportPdf(id);
-    return new StreamableFile(pdfBuffer);
+    console.log("PDF generated successfully");
+    return new StreamableFile(pdfBuffer, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="reporte-visascore.pdf"',
+    });
   }
 
   @Get(':id/status')

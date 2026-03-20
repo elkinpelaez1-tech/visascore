@@ -351,6 +351,9 @@ let VisaTestService = class VisaTestService {
                 margin: { top: '40px', bottom: '40px', left: '40px', right: '40px' }
             });
             await browser.close();
+            if (!pdfBuffer || pdfBuffer.length === 0) {
+                throw new common_1.InternalServerErrorException('PDF buffer is empty');
+            }
             return Buffer.from(pdfBuffer);
         }
         catch (err) {

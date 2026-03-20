@@ -25,7 +25,11 @@ let VisaTestController = class VisaTestController {
     }
     async getReport(id) {
         const pdfBuffer = await this.visaTestService.generateReportPdf(id);
-        return new common_1.StreamableFile(pdfBuffer);
+        console.log("PDF generated successfully");
+        return new common_1.StreamableFile(pdfBuffer, {
+            type: 'application/pdf',
+            disposition: 'attachment; filename="reporte-visascore.pdf"',
+        });
     }
     async getStatus(id) {
         return this.visaTestService.getStatus(id);
@@ -47,8 +51,6 @@ __decorate([
 ], VisaTestController.prototype, "submit", null);
 __decorate([
     (0, common_1.Get)('report/:id'),
-    (0, common_1.Header)('Content-Type', 'application/pdf'),
-    (0, common_1.Header)('Content-Disposition', 'attachment; filename="reporte-visascore.pdf"'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

@@ -356,6 +356,10 @@ export class VisaTestService {
       });
       await browser.close();
       
+      if (!pdfBuffer || pdfBuffer.length === 0) {
+        throw new InternalServerErrorException('PDF buffer is empty');
+      }
+      
       return Buffer.from(pdfBuffer);
     } catch (err) {
       const error = err as any;
