@@ -331,11 +331,18 @@ export class VisaTestService {
       console.log("HTML preview:", htmlContent.slice(0, 500));
       console.log("Launching Puppeteer...");
 
-      const browser = await puppeteer.launch({
+      const launchOptions: any = {
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+      };
+
+      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      } else if (process.platform === 'linux') {
+        launchOptions.executablePath = '/usr/bin/chromium';
+      }
+
+      const browser = await puppeteer.launch(launchOptions);
       
       console.log("Browser launched successfully");
       const page = await browser.newPage();
