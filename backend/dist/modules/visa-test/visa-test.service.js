@@ -328,10 +328,13 @@ let VisaTestService = class VisaTestService {
     `;
         try {
             console.log("HTML preview:", htmlContent.slice(0, 500));
+            console.log("Launching Puppeteer...");
             const browser = await puppeteer.launch({
-                headless: "new",
+                headless: true,
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
+            console.log("Browser launched successfully");
             const page = await browser.newPage();
             await page.setContent(htmlContent, {
                 waitUntil: 'domcontentloaded'
