@@ -336,12 +336,6 @@ export class VisaTestService {
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       };
 
-      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-      } else if (process.platform === 'linux') {
-        launchOptions.executablePath = '/usr/bin/chromium';
-      }
-
       const browser = await puppeteer.launch(launchOptions);
       
       console.log("Browser launched successfully");
