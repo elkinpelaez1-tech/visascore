@@ -2,7 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { ScoringService, DS160Profile } from '../scoring/scoring.service';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import * as puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 @Injectable()
 export class VisaTestService {
@@ -288,12 +289,12 @@ export class VisaTestService {
       console.log("HTML preview:", htmlContent.slice(0, 500));
       console.log("Launching Puppeteer...");
 
-      const launchOptions: any = {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      };
-
-      const browser = await puppeteer.launch(launchOptions);
+      const browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
       
       console.log("Browser launched successfully");
       const page = await browser.newPage();
