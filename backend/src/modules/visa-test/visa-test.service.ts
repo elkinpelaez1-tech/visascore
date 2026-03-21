@@ -289,11 +289,17 @@ export class VisaTestService {
       console.log("HTML preview:", htmlContent.slice(0, 500));
       console.log("Launching Puppeteer...");
 
+      const execPath = await chromium.executablePath();
+      console.log("Chromium executablePath:", execPath);
+
+      if (!execPath) {
+        throw new Error("Chromium executable path not found");
+      }
+
       const browser = await puppeteer.launch({
         args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
+        executablePath: execPath,
+        headless: true
       });
       
       console.log("Browser launched successfully");
