@@ -438,7 +438,7 @@ function GraciasContent() {
           {/* 3. CTA Anchor (ENHANCE CTA) */}
           <div className="text-center mt-12 mb-4">
             <Link 
-               href="#improvement-plan" 
+               href={`/improve/${testId}`} 
                className="group inline-flex items-center justify-center bg-[#0A3161] hover:bg-[#08264A] text-white px-10 py-5 rounded-[16px] text-lg font-bold transition-all duration-300 shadow-[0_8px_20px_rgba(10,49,97,0.2)] hover:shadow-[0_12px_25px_rgba(10,49,97,0.3)] hover:-translate-y-1"
             >
               Ver cómo mejorar mi aprobación
