@@ -1,10 +1,10 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import puppeteer, { Browser } from 'puppeteer-core';
+import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 @Injectable()
 export class BrowserService implements OnModuleDestroy {
-  private browser: Browser | null = null;
+  private browser: any = null;
 
   async getBrowser() {
     if (!this.browser || !this.browser.connected) {
