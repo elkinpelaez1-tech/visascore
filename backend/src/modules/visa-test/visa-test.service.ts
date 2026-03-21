@@ -274,55 +274,12 @@ export class VisaTestService {
     }
 
     const htmlContent = `
-      <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
-            .header { border-bottom: 3px solid #0A3161; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: baseline; }
-            .title { color: #0A3161; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
-            .date { color: #718096; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
-            .message { font-size: 16px; line-height: 1.6; color: #4A5568; margin-bottom: 30px; background: #F8FAFC; padding: 20px; border-radius: 8px; border-left: 4px solid #0A3161; font-weight: 500;}
-            .score-box { background-color: #F4F6F8; border: 1px solid #E2E8F0; border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 40px; }
-            .score-label { text-transform: uppercase; letter-spacing: 2px; color: #718096; font-size: 12px; margin: 0; font-weight: bold; }
-            .score-value { font-size: 80px; font-weight: 900; color: #0A3161; margin: 15px 0; letter-spacing: -2px;}
-            .risk-value { font-size: 24px; font-weight: 900; color: #B31942; margin: 0; }
-            .section { margin-bottom: 30px; }
-            .grid { display: flex; gap: 40px; margin-top: 20px; }
-            .col { flex: 1; }
-          </style>
-        </head>
         <body>
-          <div class="header">
-            <h1 class="title">Reporte Consular VisaScore</h1>
-            <span class="date">${fecha}</span>
-          </div>
-
-          <div class="message">
-            Hemos evaluado tu perfil con criterios utilizados en procesos consulares reales e inteligencia algorítmica.
-          </div>
-
-          <div class="score-box">
-            <p class="score-label">Puntaje Estimado VisaScore</p>
-            <div class="score-value">${score}</div>
-            <p class="score-label" style="margin-top: 20px;">Nivel de Riesgo y Probabilidad</p>
-            <div class="risk-value">${level}</div>
-          </div>
-
-          <div class="section">
-            <h2 style="color: #0A3161; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; font-size: 22px;">Resumen del análisis</h2>
-            <div class="grid">
-              <div class="col">${strengthsHtml}</div>
-              <div class="col">${risksHtml}</div>
-            </div>
-            ${recommendationsHtml}
-          </div>
-          
-          <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #A0AEC0; border-top: 1px solid #E2E8F0; padding-top: 20px;">
-            Este reporte oficial es generado de forma automatizada por el motor de VisaScore.<br/>
-            ID de Análisis: ${testId}
-          </div>
+          <h1>VisaScore Report</h1>
+          <p>Test ID: ${testId}</p>
+          <p>Score: ${score}</p>
+          <p>Status: ${test.status || 'paid'}</p>
         </body>
       </html>
     `;
