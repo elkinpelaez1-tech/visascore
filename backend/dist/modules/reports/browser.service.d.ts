@@ -1,7 +1,7 @@
 import { OnModuleDestroy } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
+import { Browser } from 'puppeteer-core';
 export declare class BrowserService implements OnModuleDestroy {
     private browser;
-    getBrowser(): Promise<puppeteer.Browser>;
+    getBrowser(): Promise<Browser>;
     onModuleDestroy(): Promise<void>;
 }

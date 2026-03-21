@@ -1,45 +1,15 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VisaTestService = void 0;
@@ -47,7 +17,8 @@ const common_1 = require("@nestjs/common");
 const scoring_service_1 = require("../scoring/scoring.service");
 const supabase_js_1 = require("@supabase/supabase-js");
 const resend_1 = require("resend");
-const puppeteer = __importStar(require("puppeteer"));
+const puppeteer_core_1 = __importDefault(require("puppeteer-core"));
+const chromium_1 = __importDefault(require("@sparticuz/chromium"));
 let VisaTestService = class VisaTestService {
     scoringService;
     supabase;
@@ -274,72 +245,28 @@ let VisaTestService = class VisaTestService {
       `;
         }
         const htmlContent = `
-      <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
-            .header { border-bottom: 3px solid #0A3161; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: baseline; }
-            .title { color: #0A3161; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
-            .date { color: #718096; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
-            .message { font-size: 16px; line-height: 1.6; color: #4A5568; margin-bottom: 30px; background: #F8FAFC; padding: 20px; border-radius: 8px; border-left: 4px solid #0A3161; font-weight: 500;}
-            .score-box { background-color: #F4F6F8; border: 1px solid #E2E8F0; border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 40px; }
-            .score-label { text-transform: uppercase; letter-spacing: 2px; color: #718096; font-size: 12px; margin: 0; font-weight: bold; }
-            .score-value { font-size: 80px; font-weight: 900; color: #0A3161; margin: 15px 0; letter-spacing: -2px;}
-            .risk-value { font-size: 24px; font-weight: 900; color: #B31942; margin: 0; }
-            .section { margin-bottom: 30px; }
-            .grid { display: flex; gap: 40px; margin-top: 20px; }
-            .col { flex: 1; }
-          </style>
-        </head>
         <body>
-          <div class="header">
-            <h1 class="title">Reporte Consular VisaScore</h1>
-            <span class="date">${fecha}</span>
-          </div>
-
-          <div class="message">
-            Hemos evaluado tu perfil con criterios utilizados en procesos consulares reales e inteligencia algorítmica.
-          </div>
-
-          <div class="score-box">
-            <p class="score-label">Puntaje Estimado VisaScore</p>
-            <div class="score-value">${score}</div>
-            <p class="score-label" style="margin-top: 20px;">Nivel de Riesgo y Probabilidad</p>
-            <div class="risk-value">${level}</div>
-          </div>
-
-          <div class="section">
-            <h2 style="color: #0A3161; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; font-size: 22px;">Resumen del análisis</h2>
-            <div class="grid">
-              <div class="col">${strengthsHtml}</div>
-              <div class="col">${risksHtml}</div>
-            </div>
-            ${recommendationsHtml}
-          </div>
-          
-          <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #A0AEC0; border-top: 1px solid #E2E8F0; padding-top: 20px;">
-            Este reporte oficial es generado de forma automatizada por el motor de VisaScore.<br/>
-            ID de Análisis: ${testId}
-          </div>
+          <h1>VisaScore Report</h1>
+          <p>Test ID: ${testId}</p>
+          <p>Score: ${score}</p>
+          <p>Status: ${test.status || 'paid'}</p>
         </body>
       </html>
     `;
         try {
             console.log("HTML preview:", htmlContent.slice(0, 500));
             console.log("Launching Puppeteer...");
-            const launchOptions = {
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            };
-            if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-                launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+            const execPath = await chromium_1.default.executablePath();
+            console.log("Chromium executablePath:", execPath);
+            if (!execPath) {
+                throw new Error("Chromium executable path not found");
             }
-            else if (process.platform === 'linux') {
-                launchOptions.executablePath = '/usr/bin/chromium';
-            }
-            const browser = await puppeteer.launch(launchOptions);
+            const browser = await puppeteer_core_1.default.launch({
+                args: chromium_1.default.args,
+                executablePath: execPath,
+                headless: true
+            });
             console.log("Browser launched successfully");
             const page = await browser.newPage();
             await page.setContent(htmlContent, {
