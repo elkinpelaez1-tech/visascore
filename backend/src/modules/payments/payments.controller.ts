@@ -9,7 +9,11 @@ export class PaymentsController {
 
   @Get('resolve/:transactionId')
   async resolve(@Param('transactionId') transactionId: string) {
-    return { message: 'ok' };
+    const payment = await this.paymentsService.findByTransactionId(transactionId);
+    return { 
+      message: 'ok', 
+      testId: payment?.test_id || null 
+    };
   }
 
   @Get('debug/:transactionId')
