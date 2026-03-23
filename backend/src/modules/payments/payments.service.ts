@@ -165,9 +165,9 @@ export class PaymentsService {
   async findByTransactionId(transactionId: string) {
     const { data } = await this.supabase
       .from('payments')
-      .select('*')
-      .eq('wompi_transaction_id', transactionId)
-      .maybeSingle();
+      .select('test_id')
+      .eq('transaction_id', transactionId)
+      .single();
 
     return data;
   }
