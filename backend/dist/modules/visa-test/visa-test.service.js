@@ -207,51 +207,595 @@ let VisaTestService = class VisaTestService {
             .eq('test_id', testId)
             .maybeSingle();
         const score = test.overall_score || 0;
-        const level = score > 700
-            ? 'Perfil sólido'
-            : score > 400
-                ? 'Riesgo moderado'
-                : 'Alto riesgo / baja probabilidad';
-        const fecha = new Date().toLocaleDateString('es-ES', {
+        const normalizedScore = Math.min(100, Math.max(0, Math.round(score / 10)));
+        const profileText = normalizedScore >= 80 ? "Perfil Sólido" : normalizedScore >= 60 ? "Perfil Medio" : "Perfil en Riesgo";
+        const probLabel = normalizedScore >= 80 ? "ALTA PROBABILIDAD" : normalizedScore >= 60 ? "PROBABILIDAD MODERADA" : "RIESGO DE RECHAZO";
+        const probColor = normalizedScore >= 80 ? "#15803d" : normalizedScore >= 60 ? "#b45309" : "#b91c1c";
+        const probBg = normalizedScore >= 80 ? "#f0fdf4" : normalizedScore >= 60 ? "#fffbeb" : "#fef2f2";
+        const probBorder = normalizedScore >= 80 ? "#bbf7d0" : normalizedScore >= 60 ? "#fde68a" : "#fecaca";
+        const probIcon = normalizedScore >= 80
+            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+        const fecha = new Date().toLocaleDateString('en-US', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
+        const getIconSvg = (text, type) => {
+            const t = text.toLowerCase();
+            if (t.includes('laboral') || t.includes('trabajo') || t.includes('empleo'))
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`;
+            if (t.includes('ingreso') || t.includes('financier') || t.includes('fondo') || t.includes('banco') || t.includes('dinero') || t.includes('econ'))
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>`;
+            if (t.includes('viaje') || t.includes('historial') || t.includes('visa'))
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-9.5-6.5-1.5 5-7.5-1.5-1.5 2 6 2 1.5 6 3-1-3.5-3 9.5-3z"></path></svg>`;
+            if (t.includes('arraigo') || t.includes('lazo') || t.includes('familia') || t.includes('dependiente') || t.includes('propiedad'))
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+            return type === 'strength'
+                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>`;
+        };
         let strengthsHtml = '';
-        if (breakdown?.strengths && breakdown.strengths.length > 0) {
-            strengthsHtml = `
-        <h3 style="color: #0A3161; font-size: 18px; margin-bottom: 10px;">Fortalezas actuales</h3>
-        <ul style="padding-left: 20px; line-height: 1.6; color: #4A5568;">
-          ${breakdown.strengths.map(s => `<li style="margin-bottom: 8px;">${s}</li>`).join('')}
-        </ul>
-      `;
+        const strengthsArr = breakdown?.strengths || [];
+        if (strengthsArr.length > 0) {
+            strengthsHtml = strengthsArr.map((s) => `
+        <div class="pill pill-green">
+          <div class="pill-icon">${getIconSvg(s, 'strength')}</div>
+          <span>${s}</span>
+        </div>
+      `).join('');
+        }
+        else {
+            strengthsHtml = '<div class="pill" style="color: #94A3B8;"><span>No se registraron fortalezas destacadas.</span></div>';
         }
         let risksHtml = '';
-        if (breakdown?.weaknesses && breakdown.weaknesses.length > 0) {
-            risksHtml = `
-        <h3 style="color: #B31942; font-size: 18px; margin-bottom: 10px;">Áreas de riesgo</h3>
-        <ul style="padding-left: 20px; line-height: 1.6; color: #B31942;">
-          ${breakdown.weaknesses.map(w => `<li style="margin-bottom: 8px;">${w}</li>`).join('')}
-        </ul>
-      `;
-        }
-        let recommendationsHtml = '';
-        if (breakdown?.recommendations && breakdown.recommendations.length > 0) {
-            recommendationsHtml = `
-        <div style="margin-top: 30px; background-color: #0A3161; color: white; padding: 30px; border-radius: 12px;">
-          <h3 style="color: white; margin-top: 0; font-size: 20px;">Plan de mejora estratégico</h3>
-          <ol style="padding-left: 20px; line-height: 1.6;">
-            ${breakdown.recommendations.map(r => `<li style="margin-bottom: 10px;">${r}</li>`).join('')}
-          </ol>
+        const risksArr = breakdown?.weaknesses || [];
+        if (risksArr.length > 0) {
+            risksHtml = risksArr.map((w) => `
+        <div class="pill pill-red">
+          <div class="pill-icon">${getIconSvg(w, 'risk')}</div>
+          <span>${w}</span>
         </div>
-      `;
+      `).join('');
         }
+        else {
+            risksHtml = '<div class="pill" style="color: #94A3B8;"><span>No se registraron riesgos críticos.</span></div>';
+        }
+        const strengthPercentage = Math.min(100, Math.max(0, Math.round(score / 10)));
+        const riskPercentage = Math.max(0, 100 - strengthPercentage);
+        const formatActionableInsight = (text) => {
+            const keywords = ['estabilidad laboral', 'viajes internacionales', 'capacidad financiera', 'arraigo', 'ingresos', 'historial', 'soportes económicos'];
+            let formattedText = text;
+            keywords.forEach(kw => {
+                const regex = new RegExp(`(${kw})`, 'gi');
+                formattedText = formattedText.replace(regex, '<strong>$1</strong>');
+            });
+            return formattedText;
+        };
+        const customRecommendations = [...(breakdown?.recommendations || [])];
+        if (normalizedScore < 60 && !customRecommendations.some((r) => r.toLowerCase().includes("estabilidad"))) {
+            customRecommendations.push("Se recomienda fortalecer estabilidad laboral antes de realizar la aplicación formal para mitigar dudas sobre la intención de retorno.");
+        }
+        if (breakdown?.travel_history_points !== undefined && breakdown.travel_history_points < 20) {
+            customRecommendations.push("Considerar viajes internacionales previos a países de libre acceso como soporte histórico y capacidad en pasaporte.");
+        }
+        if (breakdown?.economic_points !== undefined && breakdown.economic_points < 30) {
+            customRecommendations.push("Demostrar capacidad financiera adicional mediante ahorros sostenidos, transacciones, certificados a término o propiedades.");
+        }
+        if (customRecommendations.length === 0) {
+            customRecommendations.push("Mantener su perfil íntegro, seguro y real al momento de presentarse a su entrevista oficial consular.");
+        }
+        const recommendationsHtml = customRecommendations.map((r) => `
+      <div class="insight-item">
+        <p>${formatActionableInsight(r)}</p>
+      </div>
+    `).join('');
+        const conicGradientStr = `conic-gradient(var(--green) 0% ${strengthPercentage}%, #0A192F ${strengthPercentage}% 100%)`;
+        const conicGradientStrSmallGreen = `conic-gradient(var(--green) 0% ${strengthPercentage}%, #E2E8F0 ${strengthPercentage}% 100%)`;
+        const conicGradientStrSmallRed = `conic-gradient(var(--red) 0% ${riskPercentage}%, #FEE2E2 ${riskPercentage}% 100%)`;
         const htmlContent = `
+      <!DOCTYPE html>
       <html>
-        <body>
-          <h1>VisaScore Report</h1>
-          <p>Test ID: ${testId}</p>
-          <p>Score: ${score}</p>
-          <p>Status: ${test.status || 'paid'}</p>
-        </body>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          :root {
+            --bg: #F8FAFC;
+            --navy: #0B1F3A;
+            --navy-light: #0A192F;
+            --green: #22C55E;
+            --yellow: #F59E0B;
+            --red: #EF4444;
+            --gray-text: #64748B;
+            --gray-border: #E2E8F0;
+          }
+          body {
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: #0F172A;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+          }
+          .page {
+            padding: 40px 50px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg);
+            box-sizing: border-box;
+          }
+          
+          /* HEADER */
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--gray-border);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+          }
+          .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .doc-icon {
+            background: var(--navy);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .logo {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--navy);
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+          }
+          .subtitle {
+            font-size: 11px;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+          }
+          .header-right {
+            text-align: right;
+            font-size: 12px;
+            color: var(--gray-text);
+            font-weight: 600;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            text-transform: uppercase;
+          }
+          .header-right strong {
+            color: var(--navy);
+            font-weight: 800;
+          }
+          .sep { color: var(--gray-border); font-size: 16px; font-weight: 300; }
+
+          /* HERO SCORE */
+          .hero-section {
+            text-align: center;
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .donut-wrapper {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            margin: 0 auto 20px auto;
+            border-radius: 50%;
+            background: ${conicGradientStr};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(11, 31, 58, 0.1);
+          }
+          .donut-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -6px; left: -6px; right: -6px; bottom: -6px;
+            border: 2px dashed rgba(34, 197, 94, 0.15); /* Subtly decor */
+            border-radius: 50%;
+          }
+          .donut-inner {
+            width: 154px;
+            height: 154px;
+            background: var(--navy-light);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 2;
+          }
+          .hero-score {
+            font-size: 58px;
+            font-weight: 900;
+            margin: 0;
+            line-height: .9;
+            letter-spacing: -2px;
+          }
+          .hero-score-divider {
+            width: 25px;
+            height: 2px;
+            background: rgba(255,255,255,0.2);
+            margin: 8px 0;
+            border-radius: 2px;
+          }
+          .hero-score-max {
+            font-size: 13px;
+            color: #94A3B8;
+            font-weight: 800;
+            letter-spacing: 1px;
+          }
+          
+          .profile-title {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 10px 0 12px 0;
+            letter-spacing: -0.5px;
+          }
+          .prob-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 22px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: ${probBg};
+            color: ${probColor};
+            border: 1px solid ${probBorder};
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+          }
+
+          /* Sm Indicators */
+          .indicators-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+          }
+          .ind-gauge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+          }
+          .sm-donut-wrapper-g {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: ${conicGradientStrSmallGreen};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+          .sm-donut-wrapper-r {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: ${conicGradientStrSmallRed};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+          .sm-donut-inner {
+            width: 53px;
+            height: 53px;
+            background: var(--bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 16px;
+            z-index: 2;
+          }
+          .ind-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--gray-text);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+          }
+
+          /* Grid Cards */
+          .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 35px;
+          }
+          .card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border: 1px solid white;
+          }
+          .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 25px;
+          }
+          .icon-box-g {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #dcfce7;
+            color: var(--green);
+          }
+          .icon-box-r {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fee2e2;
+            color: var(--red);
+          }
+          .card h3 {
+            margin: 0;
+            font-size: 17px;
+            color: #0F172A;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+          }
+          
+          /* Pills */
+          .pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--navy);
+          }
+          .pill-green {
+            background: #F1F5F9;
+          }
+          .pill-green .pill-icon {
+            color: var(--green);
+            display: flex;
+          }
+          .pill-red {
+            background: #FEF2F2;
+          }
+          .pill-red .pill-icon {
+            color: var(--red);
+            display: flex;
+          }
+
+          /* Recommendations */
+          .insights-card {
+            background: var(--navy-light);
+            border-radius: 24px;
+            padding: 45px 50px;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(11, 31, 58, 0.2);
+          }
+          .insights-bg-icon {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.15;
+            color: rgba(255,255,255,0.5);
+            /* lightbulb SVG via CSS bg doesn't print well, so it's injected inside div */
+          }
+          .insights-sup {
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+          }
+          .insights-title {
+            margin: 0 0 35px 0;
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+          }
+          .insight-item {
+            border-left: 2px solid rgba(255,255,255,0.15);
+            padding-left: 25px;
+            margin-bottom: 30px;
+          }
+          .insight-item:last-child {
+            margin-bottom: 0;
+          }
+          .insight-item p {
+            margin: 0;
+            font-size: 14.5px;
+            line-height: 1.6;
+            color: #CBD5E1;
+            font-weight: 500;
+            max-width: 85%;
+          }
+          .insight-item p strong {
+            color: white;
+            font-weight: 700;
+          }
+
+          /* Footer */
+          .footer {
+            text-align: center;
+            padding-top: 30px;
+            margin-top: 20px;
+          }
+          .footer-logo-text {
+            font-size: 11px;
+            color: #CBD5E1;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+          }
+          .footer-disclaimer {
+            font-size: 11px;
+            color: #94A3B8;
+            line-height: 1.6;
+            max-width: 450px;
+            margin: 0 auto 20px auto;
+            font-weight: 500;
+          }
+          .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            font-size: 11px;
+            color: #94A3B8;
+            font-weight: 600;
+          }
+          .footer-links span {
+            text-decoration: underline;
+            color: #64748B;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          
+          <div class="header">
+            <div class="header-left">
+              <div class="doc-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div>
+                <div class="logo">VisaScore Report</div>
+                <div class="subtitle">Visa Eligibility Analysis</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <div>CASE <strong style="text-transform: uppercase;">#VS-${testId.split('-')[0].substring(0, 4)}</strong></div>
+              <div class="sep">|</div>
+              <div><strong>${fecha}</strong></div>
+            </div>
+          </div>
+          
+          
+          <div class="hero-section">
+            <div class="donut-wrapper">
+              <div class="donut-inner">
+                <div class="hero-score">${normalizedScore}</div>
+                <div class="hero-score-divider"></div>
+                <div class="hero-score-max">100</div>
+              </div>
+            </div>
+            <div class="profile-title">${profileText}</div>
+            <div class="prob-badge">
+              ${probIcon}
+              ${probLabel}
+            </div>
+
+            <div class="indicators-row">
+              <div class="ind-gauge">
+                <div class="sm-donut-wrapper-g">
+                  <div class="sm-donut-inner" style="color: var(--green);">
+                    ${strengthPercentage}%
+                  </div>
+                </div>
+                <div class="ind-label">Fortalezas</div>
+              </div>
+              <div class="ind-gauge">
+                <div class="sm-donut-wrapper-r">
+                  <div class="sm-donut-inner" style="color: var(--red);">
+                    ${riskPercentage}%
+                  </div>
+                </div>
+                <div class="ind-label">Riesgos</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid">
+            <div class="card">
+              <div class="card-header">
+                <div class="icon-box-g">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h3>Fortalezas</h3>
+              </div>
+              <div class="list-wrapper">
+                ${strengthsHtml}
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="icon-box-r">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <h3>Áreas de Riesgo</h3>
+              </div>
+              <div class="list-wrapper">
+                 ${risksHtml}
+              </div>
+            </div>
+          </div>
+          
+          <div class="insights-card">
+            <div class="insights-bg-icon">
+              <!-- Background Lightbulb Watermark -->
+              <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M5 5l1.5 1.5"></path>
+                <path d="M17.5 17.5L19 19"></path><path d="M2 12h2"></path><path d="M20 12h2"></path>
+                <path d="M5 19l1.5-1.5"></path><path d="M17.5 6.5L19 5"></path><circle cx="12" cy="12" r="5"></circle>
+              </svg>
+            </div>
+            <div class="insights-sup">Actionable Insights</div>
+            <h2 class="insights-title">Recomendaciones</h2>
+            <div class="insights-list">
+              ${recommendationsHtml}
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div class="footer-logo-text">VISASCORE DIGITAL ASSET</div>
+            <div class="footer-disclaimer">
+              This report is an automated assessment and does not guarantee visa approval.<br>
+              All data is processed securely and based on self-reported financial indicators.
+            </div>
+            <div class="footer-links">
+              <span>Terms of Service</span>
+              <span>Privacy Policy</span>
+              <span>Verify Authenticity</span>
+            </div>
+          </div>
+          
+        </div>
+      </body>
       </html>
     `;
         try {

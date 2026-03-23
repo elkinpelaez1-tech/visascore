@@ -813,15 +813,14 @@ export class VisaTestService {
           </div>
           
           <div class="footer">
-            <div class="footer-logo-text">VISASCORE DIGITAL ASSET</div>
+            <div class="footer-logo-text">ACTIVO DIGITAL VISASCORE</div>
             <div class="footer-disclaimer">
-              This report is an automated assessment and does not guarantee visa approval.<br>
-              All data is processed securely and based on self-reported financial indicators.
+              Este reporte es una evaluación automatizada algorítmicamente y no garantiza la aprobación de la visa, ya que es potestad absoluta del Cónsula de los Estados Unidos. Lo que se define es tu perfil para obtar a la Visa Americana.<br>
+              Todos los datos son procesados de forma segura y se basan en información detallada de acuerdo a los parámetros del Formulario DS160.
             </div>
             <div class="footer-links">
-              <span>Terms of Service</span>
-              <span>Privacy Policy</span>
-              <span>Verify Authenticity</span>
+              <a href="${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://visascore.co'}/terminos-y-condiciones" style="text-decoration: none; color: inherit;"><span>Términos y Condiciones</span></a>
+              <a href="${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://visascore.co'}/politica-de-privacidad" style="text-decoration: none; color: inherit;"><span>Política de Privacidad</span></a>
             </div>
           </div>
           

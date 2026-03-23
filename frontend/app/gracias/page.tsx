@@ -504,6 +504,7 @@ function GraciasContent() {
         </div>
 
         {/* 6. Email Form Section (Visual Upgrade) */}
+        {false && (
         <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_10px_25px_rgba(0,0,0,0.03)] p-10 max-w-2xl mx-auto text-center hover:shadow-[0_15px_30px_rgba(0,0,0,0.06)] transition-all duration-300 mt-8 mb-16">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-[20px] bg-slate-50 mb-6 border border-slate-100">
             <Mail className="h-8 w-8 text-slate-400" />
@@ -544,6 +545,7 @@ function GraciasContent() {
             </p>
           )}
         </div>
+        )}
 
       </div>
     </div>
