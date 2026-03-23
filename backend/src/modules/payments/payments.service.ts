@@ -80,7 +80,14 @@ export class PaymentsService {
       .single();
 
     if (existing) {
-      this.logger.log(`Transacción ya registrada: ${transaction.id}`);
+      this.logger.log(`Transacción ya registrada: ${transaction.id}. Asegurando que visa_tests refleje status 'paid' si cambió a APPROVED.`);
+      if (transaction.status === 'APPROVED') {
+        const testIdToUpdate = transaction.reference;
+        await this.supabase
+          .from('visa_tests')
+          .update({ status: 'paid' })
+          .eq('id', testIdToUpdate);
+      }
       return { received: true };
     }
 
@@ -93,13 +100,14 @@ export class PaymentsService {
       raw_webhook_data: body
     });
 
-    if (status === 'APPROVED') {
+    if (transaction.status === 'APPROVED') {
       this.logger.log(`Pago aprobado para test ${testId}`);
 
+      const currentTestId = transaction.reference;
       await this.supabase
         .from('visa_tests')
         .update({ status: 'paid' })
-        .eq('id', testId);
+        .eq('id', currentTestId);
 
       const { data: test } = await this.supabase
         .from('visa_tests')
