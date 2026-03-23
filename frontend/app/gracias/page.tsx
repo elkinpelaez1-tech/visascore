@@ -176,48 +176,36 @@ function GraciasContent() {
     if (!isTestIdValid) return;
 
     let intervalId: NodeJS.Timeout;
-    
-    const checkResult = async () => {
+
+    const fetchResult = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
         
+        // Si la petición es exitosa, el pago ya está "paid" en el backend
         if (res.ok) {
           const data = await res.json();
-          if (data?.overall_score && data.overall_score > 0) {
+          
+          if (data && data.overall_score !== undefined) {
             setResult(data);
             setLoading(false);
-            clearInterval(intervalId);
+            if (intervalId) clearInterval(intervalId);
           }
-        } else if (res.status === 403 || res.status === 404) {
-          console.log("Aún bloqueado. Reintentando...");
         } else {
-          setError("Ocurrió un error al obtener tu resultado.");
-          setLoading(false);
-          clearInterval(intervalId);
+          console.log("Validando estado del pago...");
         }
       } catch (err) {
-        console.error("Error fetching result:", err);
+        console.error("Error al obtener resultado:", err);
       }
     };
 
-    intervalId = setInterval(checkResult, 2000);
+    // Ejecutar inmediatamente la primera vez
+    fetchResult();
 
-    const timeoutId = setTimeout(() => {
-      clearInterval(intervalId);
-      setLoading((prev) => {
-        if (prev && !result) {
-          setError("El tiempo de espera se agotó. Por favor, refresca la página si ya realizaste el pago.");
-          return false;
-        }
-        return prev;
-      });
-    }, 60000);
+    // Repetir cada 3 segundos hasta tener éxito
+    intervalId = setInterval(fetchResult, 3000);
 
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [testId, isTestIdValid, result]);
+    return () => clearInterval(intervalId);
+  }, [testId, isTestIdValid]);
 
   const handleDownloadReport = async () => {
     if (!testId) return;
