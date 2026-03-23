@@ -163,11 +163,15 @@ export class PaymentsService {
   // HELPER
   // =============================
   async findByTransactionId(transactionId: string) {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from('payments')
       .select('test_id')
-      .eq('transaction_id', transactionId)
-      .single();
+      .eq('wompi_transaction_id', transactionId)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(`Error en findByTransactionId: ${error.message}`);
+    }
 
     return data;
   }
