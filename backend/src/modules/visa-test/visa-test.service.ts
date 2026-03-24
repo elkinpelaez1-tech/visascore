@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ScoringService, DS160Profile } from '../scoring/scoring.service';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
@@ -22,30 +23,29 @@ export class VisaTestService {
     try {
       console.log('📥 profile data:', profile);
 
+      const testId = randomUUID();
       const payload = {
+        id: testId,
         user_id: userId,
         status: 'pending'
       };
       
       console.log('📥 payload enviado:', JSON.stringify(payload, null, 2));
 
-      // Remove .single() to capture the exact RAW response and prevent PGRST116 masking
-      const rawResponse = await this.supabase
+      // Create the test record
+      const { data: test, error: testErr } = await this.supabase
         .from('visa_tests')
         .insert(payload)
-        .select();
+        .select()
+        .single();
 
-      console.log('🔍 RAW SUPABASE RESPONSE:', JSON.stringify(rawResponse, null, 2));
-
-      if (rawResponse.error) {
-        console.error('❌ Supabase FULL error:', JSON.stringify(rawResponse.error, null, 2));
-        throw rawResponse.error;
+      if (testErr) {
+        console.error('❌ Supabase FULL error:', JSON.stringify(testErr, null, 2));
+        throw testErr;
       }
       
-      const test = rawResponse.data && rawResponse.data.length > 0 ? rawResponse.data[0] : null;
-
       if (!test) {
-        throw new Error('❌ Failed to create visa test (RAW RESPONSE DATA WAS EMPTY OR NULL. Check your table RLS policies or trigger functions)');
+        throw new Error('❌ Failed to create visa test');
       }
 
       const result = this.scoringService.calculate(profile);
