@@ -29,20 +29,23 @@ export class VisaTestService {
       
       console.log('📥 payload enviado:', JSON.stringify(payload, null, 2));
 
-      // Create the test record (bare minimum to avoid schema mismatch)
-      const { data: test, error: testErr } = await this.supabase
+      // Remove .single() to capture the exact RAW response and prevent PGRST116 masking
+      const rawResponse = await this.supabase
         .from('visa_tests')
         .insert(payload)
-        .select()
-        .single();
+        .select();
 
-      if (testErr) {
-        console.error('❌ Supabase FULL error:', JSON.stringify(testErr, null, 2));
-        throw testErr;
+      console.log('🔍 RAW SUPABASE RESPONSE:', JSON.stringify(rawResponse, null, 2));
+
+      if (rawResponse.error) {
+        console.error('❌ Supabase FULL error:', JSON.stringify(rawResponse.error, null, 2));
+        throw rawResponse.error;
       }
       
+      const test = rawResponse.data && rawResponse.data.length > 0 ? rawResponse.data[0] : null;
+
       if (!test) {
-        throw new Error('❌ Failed to create visa test (No data returned, RLS issue?)');
+        throw new Error('❌ Failed to create visa test (RAW RESPONSE DATA WAS EMPTY OR NULL. Check your table RLS policies or trigger functions)');
       }
 
       const result = this.scoringService.calculate(profile);
