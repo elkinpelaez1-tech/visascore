@@ -50,7 +50,7 @@ export class VisaTestService {
 
       const result = this.scoringService.calculate(profile);
       await this.supabase.from('ds160_profiles').insert({
-        test_id: test.id,
+        id: test.id,
         ...profile
       });
 
@@ -184,7 +184,7 @@ export class VisaTestService {
       const { data: profile } = await this.supabase
         .from('ds160_profiles')
         .select('*')
-        .eq('test_id', testId)
+        .eq('id', testId)
         .maybeSingle();
 
       if (!profile) {
