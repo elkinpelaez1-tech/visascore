@@ -176,6 +176,16 @@ function GraciasContent() {
   useEffect(() => {
     if (!testId || testId === "undefined" || testId === "null") return;
 
+    // GUARD: Evitar que transactionIds rebotados generen polling basura
+    // Los IDs de checkout UI (o de la tabla de tests) son UUID o Hashes. 
+    // Los de transaccion puros de Wompi suelen iniciar con números tipo "1314-"
+    if (testId.startsWith('1314')) {
+      console.error('❌ testId inválido:', testId);
+      setError('No se pudo recuperar tu análisis. Contacta soporte.');
+      setLoading(false);
+      return;
+    }
+
     const intervalId = setInterval(async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
