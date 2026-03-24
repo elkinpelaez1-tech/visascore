@@ -77,18 +77,18 @@ export class PaymentsService {
       
       const status = transaction?.status || 'UNKNOWN';
 
-      // VALIDACIÓN OBLIGATORIA:
-      // Asegurar que el test_id (reference) realmente existe en visa_tests
+      // VALIDACIÓN PERMISIVA:
       const { data } = await this.supabase
         .from('visa_tests')
         .select('id')
         .eq('id', testId)
-        .single();
+        .maybeSingle();
 
       if (!data) {
-        console.error('❌ testId no existe:', testId);
-        return { received: true };
+        console.warn('⚠️ testId no encontrado, pero continuando:', testId);
       }
+      
+      console.log('🔍 testId encontrado:', data);
 
       // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
       const { data: existing } = await this.supabase
