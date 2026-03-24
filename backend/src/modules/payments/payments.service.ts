@@ -61,17 +61,21 @@ export class PaymentsService {
     try {
       console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
 
-      const transaction = body?.data?.transaction;
+      const transaction = body?.data?.transaction || body?.data;
 
-      if (!transaction) {
-        console.error('❌ no transaction');
+      const testId =
+        transaction?.reference ||
+        transaction?.id ||
+        body?.data?.reference;
+
+      console.log('🔍 testId extraído:', testId);
+
+      if (!testId) {
+        console.error('❌ no testId en webhook');
         return { received: true };
       }
-
-      const testId = transaction.reference;
-      console.log('🔍 testId:', testId);
       
-      const status = transaction.status;
+      const status = transaction?.status || 'UNKNOWN';
 
       // VALIDACIÓN OBLIGATORIA:
       // Asegurar que el test_id (reference) realmente existe en visa_tests
