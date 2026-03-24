@@ -174,39 +174,26 @@ function GraciasContent() {
 
   // FASE 2: RESULT (obtener datos del reporte)
   useEffect(() => {
-    // NO consultar /result sin testId válido
-    if (!isTestIdValid) return;
+    if (!testId || testId === "undefined" || testId === "null") return;
 
-    let intervalId: NodeJS.Timeout;
-
-    const fetchResult = async () => {
+    const intervalId = setInterval(async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
-        
         if (res.ok) {
           const data = await res.json();
-          
           if (data && data.overall_score) {
             setResult(data);
             setLoading(false);
-            if (intervalId) clearInterval(intervalId);
+            clearInterval(intervalId);
           }
-        } else {
-          console.log("Validando datos del pago...");
         }
       } catch (err) {
         console.error("Error al obtener resultado:", err);
       }
-    };
-
-    // Ejecutar inmediatamente el primer check
-    fetchResult();
-
-    // Iniciar polling de result cada 3 segundos
-    intervalId = setInterval(fetchResult, 3000);
+    }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [testId, isTestIdValid]);
+  }, [testId]);
 
   const handleDownloadReport = async () => {
     if (!testId) return;
