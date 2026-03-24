@@ -189,13 +189,19 @@ function GraciasContent() {
     const intervalId = setInterval(async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.overall_score) {
-            setResult(data);
-            setLoading(false);
-            clearInterval(intervalId);
-          }
+        
+        if (!res.ok) {
+          clearInterval(intervalId);
+          setError("No se pudo encontrar tu análisis o tu pago no ha sido aprobado. Contacta soporte.");
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (data && data.overall_score) {
+          setResult(data);
+          setLoading(false);
+          clearInterval(intervalId);
         }
       } catch (err) {
         console.error("Error al obtener resultado:", err);
