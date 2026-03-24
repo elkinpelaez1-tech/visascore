@@ -127,19 +127,22 @@ function GraciasContent() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloading, setDownloading] = useState(false);
 
-  // 1. Resolve wompi payment to testId
+  // FASE 1: RESOLVE (obtener testId)
   useEffect(() => {
+    // Si ya viene el testId por URL directamente, pasamos a Fase 2
     if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") {
       setTestId(urlTestId);
       return;
     }
+    
+    // Si no tenemos nada de Wompi, no hay que hacer nada acá
     if (!wompiId || wompiId === "undefined" || wompiId === "null") {
       setLoading(false);
       return;
     }
 
     let attempts = 0;
-    const maxAttempts = 60; // 2 minutos de espera para el webhook
+    const maxAttempts = 60; // Hasta 2 minutos esperando al banco/webhook
 
     const interval = setInterval(async () => {
       attempts++;
@@ -147,20 +150,15 @@ function GraciasContent() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
         const data = await res.json();
 
-        if (data.testId) {
+        if (data && data.testId) {
+          // Detener polling de fase 1
           clearInterval(interval);
+          // Guardar testId (activa automáticamente Fase 2)
           setTestId(data.testId);
-
-          const resultRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${data.testId}`);
-          if (resultRes.ok) {
-            const resultData = await resultRes.json();
-            if (resultData && resultData.overall_score) {
-              setResult(resultData);
-              setLoading(false);
-            }
-          }
+          return;
         }
 
+        // Si sobrepasa los intentos máximos sin respuesta del webhook
         if (attempts >= maxAttempts) {
           clearInterval(interval);
           setLoading(false);
@@ -169,13 +167,14 @@ function GraciasContent() {
       } catch (err) {
         console.error("Error resolving transaction:", err);
       }
-    }, 2000);
+    }, 2500); // Polling de resolve cada 2.5 seg
 
     return () => clearInterval(interval);
   }, [wompiId, urlTestId]);
 
-  // 2. Poll for the final score if testId is resolved
+  // FASE 2: RESULT (obtener datos del reporte)
   useEffect(() => {
+    // NO consultar /result sin testId válido
     if (!isTestIdValid) return;
 
     let intervalId: NodeJS.Timeout;
@@ -184,7 +183,6 @@ function GraciasContent() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
         
-        // Si la petición es exitosa, el pago ya está "paid" en el backend
         if (res.ok) {
           const data = await res.json();
           
@@ -194,17 +192,17 @@ function GraciasContent() {
             if (intervalId) clearInterval(intervalId);
           }
         } else {
-          console.log("Validando estado del pago...");
+          console.log("Validando datos del pago...");
         }
       } catch (err) {
         console.error("Error al obtener resultado:", err);
       }
     };
 
-    // Ejecutar inmediatamente la primera vez
+    // Ejecutar inmediatamente el primer check
     fetchResult();
 
-    // Repetir cada 3 segundos hasta tener éxito
+    // Iniciar polling de result cada 3 segundos
     intervalId = setInterval(fetchResult, 3000);
 
     return () => clearInterval(intervalId);
