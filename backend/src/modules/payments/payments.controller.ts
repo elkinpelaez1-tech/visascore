@@ -28,7 +28,13 @@ export class PaymentsController {
 
   @Post('webhook')
   async webhook(@Body() body: any) {
-    this.logger.log('Webhook Wompi recibido');
-    return this.paymentsService.handleWebhook(body);
+    this.logger.log('🔥 webhook hit');
+    try {
+      await this.paymentsService.handleWebhook(body);
+    } catch (error) {
+      this.logger.error('❌ webhook controller error:', error);
+    }
+    // 🔥 CRÍTICO: SIEMPRE RESPONDER 200
+    return { received: true };
   }
 }

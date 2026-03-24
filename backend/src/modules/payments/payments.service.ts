@@ -59,20 +59,17 @@ export class PaymentsService {
     // }
 
     try {
-      if (body.event !== 'transaction.updated') {
-        return { received: true, ignored: true };
-      }
-
       console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
 
-      const transaction = body.data?.transaction;
+      const transaction = body?.data?.transaction;
+
       if (!transaction) {
         console.error('❌ no transaction');
         return { received: true };
       }
 
       const testId = transaction.reference;
-      console.log('🔍 testId extraído:', testId);
+      console.log('🔍 testId:', testId);
       
       const status = transaction.status;
 
@@ -85,7 +82,7 @@ export class PaymentsService {
         .single();
 
       if (!data) {
-        console.error('❌ testId no existe en DB:', testId);
+        console.error('❌ testId no existe:', testId);
         return { received: true };
       }
 
