@@ -118,6 +118,21 @@ export class VisaTestService {
       throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
     }
 
+    if (test.status === 'paid' && (test.overall_score === null || test.overall_score === undefined)) {
+      console.log(`Score missing, regenerating for testId: ${testId}`);
+      await this.generateScore(testId);
+      
+      const { data: refreshedTest } = await this.supabase
+        .from('visa_tests')
+        .select('*')
+        .eq('id', testId)
+        .maybeSingle();
+      
+      if (refreshedTest) {
+        test = refreshedTest;
+      }
+    }
+
     // ✅ 2. Obtener breakdown aparte (NO rompe si no existe)
     const { data: breakdown } = await this.supabase
       .from('visa_score_breakdown')
@@ -146,6 +161,65 @@ export class VisaTestService {
       recommendations: breakdown?.recommendations || [],
       simulations: breakdown?.improvement_simulations || []
     };
+  }
+
+  private async generateScore(testId: string) {
+    console.log(`Generating score...`);
+    try {
+      const { data: profile } = await this.supabase
+        .from('ds160_profiles')
+        .select('*')
+        .eq('test_id', testId)
+        .maybeSingle();
+
+      if (!profile) {
+        console.log(`Score generation failed: No profile found`);
+        return;
+      }
+
+      const profileData = { ...profile };
+      delete profileData.id;
+      delete profileData.test_id;
+      delete profileData.created_at;
+      delete profileData.updated_at;
+
+      const result = this.scoringService.calculate(profileData as DS160Profile);
+
+      await this.supabase
+        .from('visa_tests')
+        .update({
+          overall_score: result.totalScore,
+          metadata: { 
+            approval_probability: result.approvalProbability 
+          }
+        })
+        .eq('id', testId);
+
+      const { data: existingBreakdown } = await this.supabase
+        .from('visa_score_breakdown')
+        .select('id')
+        .eq('test_id', testId)
+        .maybeSingle();
+
+      if (!existingBreakdown) {
+        await this.supabase.from('visa_score_breakdown').insert({
+          test_id: testId,
+          personal_points: result.breakdown.personal,
+          economic_points: result.breakdown.economic,
+          rootedness_points: result.breakdown.ties,
+          travel_history_points: result.breakdown.travel,
+          migration_history_points: result.breakdown.migration,
+          strengths: result.strengths,
+          weaknesses: result.weaknesses,
+          recommendations: result.recommendations,
+          improvement_simulations: result.simulations
+        });
+      }
+
+      console.log(`Score generated successfully`);
+    } catch (err: any) {
+      console.log(`Score generation failed: ${err.message}`);
+    }
   }
 
   async sendEmail(testId: string, email: string) {
