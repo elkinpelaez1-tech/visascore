@@ -62,25 +62,29 @@ export class PaymentsService {
       return { received: true, ignored: true };
     }
 
+    console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
+
     const transaction = body.data?.transaction;
     if (!transaction) {
       throw new BadRequestException('Transacción inválida');
     }
 
     const testId = transaction.reference;
+    console.log('🔍 testId extraído:', testId);
+    
     const status = transaction.status;
 
     // VALIDACIÓN OBLIGATORIA:
     // Asegurar que el test_id (reference) realmente existe en visa_tests
-    const { data: testExists, error: testError } = await this.supabase
+    const { data } = await this.supabase
       .from('visa_tests')
       .select('id')
       .eq('id', testId)
       .single();
 
-    if (testError || !testExists) {
-      this.logger.error(`Invalid test_id: test does not exist for reference ${testId}`);
-      throw new Error('❌ test_id does not exist');
+    if (!data) {
+      console.error('❌ testId no existe en DB:', testId);
+      return;
     }
 
     // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
