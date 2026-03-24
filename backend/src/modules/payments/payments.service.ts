@@ -49,113 +49,30 @@ export class PaymentsService {
   // WEBHOOK WOMPI
   // =============================
   async handleWebhook(body: any) {
-    this.logger.log('Webhook Wompi recibido');
-
-    const signature = body.signature?.checksum;
-
-    // if (!signature || !this.isValidWompiSignature(body, signature)) {
-    //   this.logger.warn('Firma inválida');
-    //   throw new BadRequestException('Firma inválida');
-    // }
+    console.log('🔥 webhook hit');
 
     try {
-      console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
-
       const transaction = body?.data?.transaction || body?.data;
 
       const testId =
         transaction?.reference ||
-        transaction?.id ||
-        body?.data?.reference;
+        transaction?.id;
 
-      console.log('🔍 testId extraído:', testId);
+      console.log('🔍 testId:', testId);
 
-      if (!testId) {
-        console.error('❌ no testId en webhook');
-        return { received: true };
-      }
-      
-      const status = transaction?.status || 'UNKNOWN';
+      // 🔥 NO VALIDAR - NO BLOQUEAR
 
-      // VALIDACIÓN PERMISIVA:
-      const { data } = await this.supabase
+      await this.supabase
         .from('visa_tests')
-        .select('id')
-        .eq('id', testId)
-        .maybeSingle();
+        .update({ status: 'paid' })
+        .eq('id', testId);
 
-      if (!data) {
-        console.warn('⚠️ testId no encontrado, pero continuando:', testId);
-      }
-      
-      console.log('🔍 testId encontrado:', data);
-
-      // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
-      const { data: existing } = await this.supabase
-        .from('payments')
-        .select('id')
-        .eq('wompi_transaction_id', transaction.id)
-        .single();
-
-      if (existing) {
-        this.logger.log(`Transacción ya registrada: ${transaction.id}. Asegurando que visa_tests refleje status 'paid' si cambió a APPROVED.`);
-        if (transaction.status === 'APPROVED') {
-          const testIdToUpdate = transaction.reference;
-          await this.supabase
-            .from('visa_tests')
-            .update({ status: 'paid' })
-            .eq('id', testIdToUpdate);
-            
-          // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
-          await this.visaTestService.generateScore(testIdToUpdate);
-        }
-        return { received: true };
-      }
-
-      await this.supabase.from('payments').insert({
-        test_id: testId,
-        wompi_transaction_id: transaction.id,
-        amount: transaction.amount_in_cents / 100,
-        status: status.toLowerCase(),
-        payment_method: transaction.payment_method_type,
-        raw_webhook_data: body
-      });
-
-      if (transaction.status === 'APPROVED') {
-        this.logger.log(`Pago aprobado para test ${testId}`);
-
-        const currentTestId = transaction.reference;
-        await this.supabase
-          .from('visa_tests')
-          .update({ status: 'paid' })
-          .eq('id', currentTestId);
-          
-        // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
-        await this.visaTestService.generateScore(currentTestId);
-
-        const { data: test } = await this.supabase
-          .from('visa_tests')
-          .select('*, profiles(email)')
-          .eq('id', testId)
-          .single();
-
-        if (test?.profiles?.email) {
-          const pdfBuffer = await this.reportsService.generatePdf(testId);
-
-          await this.mailService.sendResultEmail(
-            test.profiles.email,
-            testId,
-            test.overall_score,
-            pdfBuffer
-          );
-        }
-      }
+      await this.visaTestService.generateScore(testId);
 
     } catch (error) {
       console.error('❌ webhook error:', error);
     }
 
-    // 🔥 SIEMPRE responder OK a Wompi
     return { received: true };
   }
 
