@@ -28,14 +28,22 @@ export class PaymentsService {
       .from('visa_tests')
       .select('id')
       .eq('id', testId)
-      .single();
+      .maybeSingle();
 
     // Si no existe, crearlo
     if (!existing) {
-      await this.supabase.from('visa_tests').insert({
-        id: testId,
-        status: 'pending'
-      });
+      const { data: test, error } = await this.supabase
+        .from('visa_tests')
+        .insert({
+          id: testId,
+          status: 'pending'
+        })
+        .select()
+        .single();
+        
+      if (error || !test) {
+        throw new Error('Failed to create visa test');
+      }
     }
 
     const baseUrl = process.env.CHECKOUT_UI_URL;
@@ -71,6 +79,19 @@ export class PaymentsService {
 
     const testId = transaction.reference;
     const status = transaction.status;
+
+    // VALIDACIÓN OBLIGATORIA:
+    // Asegurar que el test_id (reference) realmente existe en visa_tests
+    const { data: testRecord, error: testError } = await this.supabase
+      .from('visa_tests')
+      .select('id')
+      .eq('id', testId)
+      .maybeSingle();
+
+    if (testError || !testRecord) {
+      this.logger.error(`Invalid test_id: test does not exist for reference ${testId}`);
+      throw new Error('Invalid test_id: test does not exist');
+    }
 
     // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
     const { data: existing } = await this.supabase
