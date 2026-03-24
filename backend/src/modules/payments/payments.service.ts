@@ -58,96 +58,103 @@ export class PaymentsService {
     //   throw new BadRequestException('Firma inválida');
     // }
 
-    if (body.event !== 'transaction.updated') {
-      return { received: true, ignored: true };
-    }
-
-    console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
-
-    const transaction = body.data?.transaction;
-    if (!transaction) {
-      throw new BadRequestException('Transacción inválida');
-    }
-
-    const testId = transaction.reference;
-    console.log('🔍 testId extraído:', testId);
-    
-    const status = transaction.status;
-
-    // VALIDACIÓN OBLIGATORIA:
-    // Asegurar que el test_id (reference) realmente existe en visa_tests
-    const { data } = await this.supabase
-      .from('visa_tests')
-      .select('id')
-      .eq('id', testId)
-      .single();
-
-    if (!data) {
-      console.error('❌ testId no existe en DB:', testId);
-      return;
-    }
-
-    // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
-    const { data: existing } = await this.supabase
-      .from('payments')
-      .select('id')
-      .eq('wompi_transaction_id', transaction.id)
-      .single();
-
-    if (existing) {
-      this.logger.log(`Transacción ya registrada: ${transaction.id}. Asegurando que visa_tests refleje status 'paid' si cambió a APPROVED.`);
-      if (transaction.status === 'APPROVED') {
-        const testIdToUpdate = transaction.reference;
-        await this.supabase
-          .from('visa_tests')
-          .update({ status: 'paid' })
-          .eq('id', testIdToUpdate);
-          
-        // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
-        await this.visaTestService.generateScore(testIdToUpdate);
+    try {
+      if (body.event !== 'transaction.updated') {
+        return { received: true, ignored: true };
       }
-      return { received: true };
-    }
 
-    await this.supabase.from('payments').insert({
-      test_id: testId,
-      wompi_transaction_id: transaction.id,
-      amount: transaction.amount_in_cents / 100,
-      status: status.toLowerCase(),
-      payment_method: transaction.payment_method_type,
-      raw_webhook_data: body
-    });
+      console.log('📩 webhook payload:', JSON.stringify(body, null, 2));
 
-    if (transaction.status === 'APPROVED') {
-      this.logger.log(`Pago aprobado para test ${testId}`);
+      const transaction = body.data?.transaction;
+      if (!transaction) {
+        console.error('❌ no transaction');
+        return { received: true };
+      }
 
-      const currentTestId = transaction.reference;
-      await this.supabase
+      const testId = transaction.reference;
+      console.log('🔍 testId extraído:', testId);
+      
+      const status = transaction.status;
+
+      // VALIDACIÓN OBLIGATORIA:
+      // Asegurar que el test_id (reference) realmente existe en visa_tests
+      const { data } = await this.supabase
         .from('visa_tests')
-        .update({ status: 'paid' })
-        .eq('id', currentTestId);
-        
-      // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
-      await this.visaTestService.generateScore(currentTestId);
-
-      const { data: test } = await this.supabase
-        .from('visa_tests')
-        .select('*, profiles(email)')
+        .select('id')
         .eq('id', testId)
         .single();
 
-      if (test?.profiles?.email) {
-        const pdfBuffer = await this.reportsService.generatePdf(testId);
-
-        await this.mailService.sendResultEmail(
-          test.profiles.email,
-          testId,
-          test.overall_score,
-          pdfBuffer
-        );
+      if (!data) {
+        console.error('❌ testId no existe en DB:', testId);
+        return { received: true };
       }
+
+      // 🔥 IMPORTANTE: guardar SIEMPRE la transacción
+      const { data: existing } = await this.supabase
+        .from('payments')
+        .select('id')
+        .eq('wompi_transaction_id', transaction.id)
+        .single();
+
+      if (existing) {
+        this.logger.log(`Transacción ya registrada: ${transaction.id}. Asegurando que visa_tests refleje status 'paid' si cambió a APPROVED.`);
+        if (transaction.status === 'APPROVED') {
+          const testIdToUpdate = transaction.reference;
+          await this.supabase
+            .from('visa_tests')
+            .update({ status: 'paid' })
+            .eq('id', testIdToUpdate);
+            
+          // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
+          await this.visaTestService.generateScore(testIdToUpdate);
+        }
+        return { received: true };
+      }
+
+      await this.supabase.from('payments').insert({
+        test_id: testId,
+        wompi_transaction_id: transaction.id,
+        amount: transaction.amount_in_cents / 100,
+        status: status.toLowerCase(),
+        payment_method: transaction.payment_method_type,
+        raw_webhook_data: body
+      });
+
+      if (transaction.status === 'APPROVED') {
+        this.logger.log(`Pago aprobado para test ${testId}`);
+
+        const currentTestId = transaction.reference;
+        await this.supabase
+          .from('visa_tests')
+          .update({ status: 'paid' })
+          .eq('id', currentTestId);
+          
+        // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
+        await this.visaTestService.generateScore(currentTestId);
+
+        const { data: test } = await this.supabase
+          .from('visa_tests')
+          .select('*, profiles(email)')
+          .eq('id', testId)
+          .single();
+
+        if (test?.profiles?.email) {
+          const pdfBuffer = await this.reportsService.generatePdf(testId);
+
+          await this.mailService.sendResultEmail(
+            test.profiles.email,
+            testId,
+            test.overall_score,
+            pdfBuffer
+          );
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ webhook error:', error);
     }
 
+    // 🔥 SIEMPRE responder OK a Wompi
     return { received: true };
   }
 
