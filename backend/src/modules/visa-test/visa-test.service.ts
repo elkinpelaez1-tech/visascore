@@ -20,21 +20,19 @@ export class VisaTestService {
 
   async submitTest(profile: DS160Profile, userId: string = '00000000-0000-0000-0000-000000000000') {
     try {
-      console.log('📥 payload submit:', profile);
+      console.log('📥 profile data:', profile);
 
-      const result = this.scoringService.calculate(profile);
+      const payload = {
+        user_id: userId,
+        status: 'pending'
+      };
       
-      // Create the test record
+      console.log('📥 payload:', payload);
+
+      // Create the test record (bare minimum to avoid schema mismatch)
       const { data: test, error: testErr } = await this.supabase
         .from('visa_tests')
-        .insert({
-          user_id: userId,
-          overall_score: result.totalScore,
-          status: 'locked',
-          metadata: { 
-            approval_probability: result.approvalProbability 
-          }
-        })
+        .insert(payload)
         .select()
         .single();
 
@@ -47,7 +45,7 @@ export class VisaTestService {
         throw new Error('❌ Failed to create visa test');
       }
 
-      // Create the detailed profile
+      const result = this.scoringService.calculate(profile);
       await this.supabase.from('ds160_profiles').insert({
         test_id: test.id,
         ...profile
