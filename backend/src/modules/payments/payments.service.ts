@@ -58,14 +58,16 @@ export class PaymentsService {
         transaction?.reference ||
         transaction?.id;
 
-      console.log('🔍 testId:', testId);
-
-      // 🔥 NO VALIDAR - NO BLOQUEAR
-
-      await this.supabase
+      console.log('🔍 testId recibido:', testId);
+      
+      const { data: updateData, error } = await this.supabase
         .from('visa_tests')
         .update({ status: 'paid' })
-        .eq('id', testId);
+        .eq('id', testId)
+        .select();
+
+      console.log('🧾 resultado update:', updateData);
+      console.log('❌ error update:', error);
 
       await this.visaTestService.generateScore(testId);
 
