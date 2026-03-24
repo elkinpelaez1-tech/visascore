@@ -97,15 +97,18 @@ export default function TestPage() {
       setLoading(true);
       console.log('[Analytics] test_completed');
       try {
-        const response = await axios.post("http://localhost:3000/visa-test/submit", formData);
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/visa-test/submit`, formData);
+        
         // Simulation of smart intelligence
         setIsCapping(true);
         setTimeout(() => {
            router.push(`/paywall?id=${response.data.testId}`);
         }, 4500);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error submitting test", error);
-        router.push(`/paywall?id=temp-${Date.now()}`);
+        setLoading(false);
+        setIsCapping(false);
+        alert("Ocurrió un error al procesar tu formulario. Por favor revisa tu conexión e intenta de nuevo.");
       }
     }
   };
