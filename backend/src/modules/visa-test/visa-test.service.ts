@@ -35,7 +35,9 @@ export class VisaTestService {
       .select()
       .single();
 
-    if (testErr) throw new Error(`Test creation failed: ${testErr.message}`);
+    if (testErr || !test) {
+      throw new Error('❌ Failed to create visa test');
+    }
 
     // Create the detailed profile
     await this.supabase.from('ds160_profiles').insert({
@@ -96,7 +98,7 @@ export class VisaTestService {
     console.log('[DEBUG] SIMPLE QUERY RESULT:', testDumb, 'ERROR:', errorDumb);
 
     // ✅ 1. Obtener test SIN JOIN (clave del fix)
-    const { data: test, error } = await this.supabase
+    let { data: test, error } = await this.supabase
       .from('visa_tests')
       .select('*')
       .eq('id', testId)
