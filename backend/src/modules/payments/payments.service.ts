@@ -192,6 +192,21 @@ export class PaymentsService {
 
     if (error) {
       this.logger.error(`Error en findByTransactionId: ${error.message}`);
+      return null;
+    }
+
+    if (!data || !data.test_id) {
+      return null;
+    }
+
+    const testExists = await this.supabase
+      .from('visa_tests')
+      .select('id')
+      .eq('id', data.test_id)
+      .single();
+
+    if (!testExists.data) {
+      return null; // 👈 CLAVE
     }
 
     return data;
