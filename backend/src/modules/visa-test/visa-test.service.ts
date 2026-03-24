@@ -19,51 +19,63 @@ export class VisaTestService {
   }
 
   async submitTest(profile: DS160Profile, userId: string = '00000000-0000-0000-0000-000000000000') {
-    const result = this.scoringService.calculate(profile);
-    
-    // Create the test record
-    const { data: test, error: testErr } = await this.supabase
-      .from('visa_tests')
-      .insert({
-        user_id: userId,
-        overall_score: result.totalScore,
+    try {
+      console.log('📥 payload submit:', profile);
+
+      const result = this.scoringService.calculate(profile);
+      
+      // Create the test record
+      const { data: test, error: testErr } = await this.supabase
+        .from('visa_tests')
+        .insert({
+          user_id: userId,
+          overall_score: result.totalScore,
+          status: 'locked',
+          metadata: { 
+            approval_probability: result.approvalProbability 
+          }
+        })
+        .select()
+        .single();
+
+      if (testErr) {
+        console.error('❌ Supabase insert error:', testErr);
+        throw new Error(testErr.message);
+      }
+      
+      if (!test) {
+        throw new Error('❌ Failed to create visa test');
+      }
+
+      // Create the detailed profile
+      await this.supabase.from('ds160_profiles').insert({
+        test_id: test.id,
+        ...profile
+      });
+
+      // Create the score breakdown
+      await this.supabase.from('visa_score_breakdown').insert({
+        test_id: test.id,
+        personal_points: result.breakdown.personal,
+        economic_points: result.breakdown.economic,
+        rootedness_points: result.breakdown.ties,
+        travel_history_points: result.breakdown.travel,
+        migration_history_points: result.breakdown.migration,
+        strengths: result.strengths,
+        weaknesses: result.weaknesses,
+        recommendations: result.recommendations,
+        improvement_simulations: result.simulations
+      });
+
+      return {
+        testId: test.id,
         status: 'locked',
-        metadata: { 
-          approval_probability: result.approvalProbability 
-        }
-      })
-      .select()
-      .single();
-
-    if (testErr || !test) {
-      throw new Error('❌ Failed to create visa test');
+        message: 'Tu VisaScore está listo. Realiza el pago para desbloquear.'
+      };
+    } catch (error) {
+      console.error('❌ submit error:', error);
+      throw error;
     }
-
-    // Create the detailed profile
-    await this.supabase.from('ds160_profiles').insert({
-      test_id: test.id,
-      ...profile
-    });
-
-    // Create the score breakdown
-    await this.supabase.from('visa_score_breakdown').insert({
-      test_id: test.id,
-      personal_points: result.breakdown.personal,
-      economic_points: result.breakdown.economic,
-      rootedness_points: result.breakdown.ties,
-      travel_history_points: result.breakdown.travel,
-      migration_history_points: result.breakdown.migration,
-      strengths: result.strengths,
-      weaknesses: result.weaknesses,
-      recommendations: result.recommendations,
-      improvement_simulations: result.simulations
-    });
-
-    return {
-      testId: test.id,
-      status: 'locked',
-      message: 'Tu VisaScore está listo. Realiza el pago para desbloquear.'
-    };
   }
 
   async unlockTest(testId: string) {
