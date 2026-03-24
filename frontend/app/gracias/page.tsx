@@ -139,7 +139,7 @@ function GraciasContent() {
     }
 
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 60; // 2 minutos de espera para el webhook
 
     const interval = setInterval(async () => {
       attempts++;
@@ -154,14 +154,17 @@ function GraciasContent() {
           const resultRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${data.testId}`);
           if (resultRes.ok) {
             const resultData = await resultRes.json();
-            setResult(resultData);
-            setLoading(false);
+            if (resultData && resultData.overall_score) {
+              setResult(resultData);
+              setLoading(false);
+            }
           }
         }
 
         if (attempts >= maxAttempts) {
           clearInterval(interval);
           setLoading(false);
+          setError("El pago está tomando más tiempo en procesarse por parte de su banco. Por favor verifique su correo en unos minutos o recargue esta página.");
         }
       } catch (err) {
         console.error("Error resolving transaction:", err);
@@ -185,7 +188,7 @@ function GraciasContent() {
         if (res.ok) {
           const data = await res.json();
           
-          if (data && data.overall_score !== undefined) {
+          if (data && data.overall_score) {
             setResult(data);
             setLoading(false);
             if (intervalId) clearInterval(intervalId);
