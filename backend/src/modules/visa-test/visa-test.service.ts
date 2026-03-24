@@ -27,7 +27,7 @@ export class VisaTestService {
         status: 'pending'
       };
       
-      console.log('📥 payload:', payload);
+      console.log('📥 payload enviado:', JSON.stringify(payload, null, 2));
 
       // Create the test record (bare minimum to avoid schema mismatch)
       const { data: test, error: testErr } = await this.supabase
@@ -37,12 +37,12 @@ export class VisaTestService {
         .single();
 
       if (testErr) {
-        console.error('❌ Supabase insert error:', testErr);
-        throw new Error(testErr.message);
+        console.error('❌ Supabase FULL error:', JSON.stringify(testErr, null, 2));
+        throw testErr;
       }
       
       if (!test) {
-        throw new Error('❌ Failed to create visa test');
+        throw new Error('❌ Failed to create visa test (No data returned, RLS issue?)');
       }
 
       const result = this.scoringService.calculate(profile);
