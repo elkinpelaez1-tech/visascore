@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import { MailService } from '../mail/mail.service';
 import { ReportsService } from '../reports/reports.service';
+import { VisaTestService } from '../visa-test/visa-test.service';
 import * as crypto from 'crypto-js';
 
 @Injectable()
@@ -11,7 +12,8 @@ export class PaymentsService {
 
   constructor(
     private mailService: MailService,
-    private reportsService: ReportsService
+    private reportsService: ReportsService,
+    private visaTestService: VisaTestService
   ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -96,6 +98,9 @@ export class PaymentsService {
           .from('visa_tests')
           .update({ status: 'paid' })
           .eq('id', testIdToUpdate);
+          
+        // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
+        await this.visaTestService.generateScore(testIdToUpdate);
       }
       return { received: true };
     }
@@ -117,6 +122,9 @@ export class PaymentsService {
         .from('visa_tests')
         .update({ status: 'paid' })
         .eq('id', currentTestId);
+        
+      // 🔥 IMPORTANTE: GENERAR SCORE INMEDIATAMENTE
+      await this.visaTestService.generateScore(currentTestId);
 
       const { data: test } = await this.supabase
         .from('visa_tests')

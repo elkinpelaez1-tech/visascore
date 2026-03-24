@@ -178,7 +178,7 @@ export class VisaTestService {
     };
   }
 
-  private async generateScore(testId: string) {
+  async generateScore(testId: string) {
     console.log(`Generating score...`);
     try {
       const { data: profile } = await this.supabase

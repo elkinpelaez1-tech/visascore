@@ -5,6 +5,7 @@ import { ScoringService } from '../scoring/scoring.service';
 
 @Module({
   providers: [VisaTestService, ScoringService],
-  controllers: [VisaTestController]
+  controllers: [VisaTestController],
+  exports: [VisaTestService]
 })
 export class VisaTestModule {}
