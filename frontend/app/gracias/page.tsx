@@ -116,7 +116,16 @@ function GraciasContent() {
   const wompiId = searchParams.get("id");
   const urlTestId = searchParams.get("testId");
 
-  const [testId, setTestId] = useState<string | null>(urlTestId);
+  // Recuperar testId desde sessionStorage si Wompi no lo devolvió en la URL
+  const storedTestId = typeof window !== "undefined" ? sessionStorage.getItem("pendingTestId") : null;
+  const resolvedTestId = urlTestId || storedTestId;
+
+  // Limpiar sessionStorage una vez leído para evitar reusos accidentales
+  if (typeof window !== "undefined" && storedTestId) {
+    sessionStorage.removeItem("pendingTestId");
+  }
+
+  const [testId, setTestId] = useState<string | null>(resolvedTestId);
   const isTestIdValid = !!testId && testId !== "undefined" && testId !== "null";
 
   const [loading, setLoading] = useState(true);
@@ -129,9 +138,9 @@ function GraciasContent() {
 
   // FASE 1: RESOLVE (obtener testId)
   useEffect(() => {
-    // Si ya viene el testId por URL directamente, pasamos a Fase 2
-    if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") {
-      setTestId(urlTestId);
+    // Si ya tenemos testId (por URL o sessionStorage), pasamos a Fase 2
+    if (resolvedTestId && resolvedTestId !== "undefined" && resolvedTestId !== "null") {
+      setTestId(resolvedTestId);
       return;
     }
     
