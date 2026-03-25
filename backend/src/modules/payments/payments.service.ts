@@ -50,16 +50,35 @@ export class PaymentsService {
   // =============================
   async handleWebhook(body: any) {
     console.log('🔥 webhook hit');
+    console.log('📦 webhook body completo:', JSON.stringify(body, null, 2));
 
     try {
       const transaction = body?.data?.transaction || body?.data;
+      console.log('🔎 transaction object:', JSON.stringify(transaction, null, 2));
 
-      const testId =
-        transaction?.reference ||
-        transaction?.id;
+      const reference = transaction?.reference;
+      const wompiTxId = transaction?.id;
+      const status = transaction?.status;
 
-      console.log('🔍 testId recibido:', testId);
-      
+      console.log('🔍 reference:', reference);
+      console.log('🔍 wompiTxId:', wompiTxId);
+      console.log('🔍 status:', status);
+
+      // Solo procesar pagos aprobados
+      if (status !== 'APPROVED') {
+        console.log(`⏭️ Ignorando webhook con status: ${status}`);
+        return { received: true };
+      }
+
+      // reference debe ser el testId (UUID). Si no viene, no podemos hacer nada.
+      const testId = reference?.trim();
+      if (!testId) {
+        console.error('❌ No se encontró reference en el webhook. wompiTxId:', wompiTxId);
+        return { received: true };
+      }
+
+      console.log('🔍 testId a actualizar:', testId);
+
       const { data: updateData, error } = await this.supabase
         .from('visa_tests')
         .update({ status: 'paid' })
