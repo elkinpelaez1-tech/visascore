@@ -54,6 +54,15 @@ export class VisaTestService {
         ...profile
       });
 
+      // Guardar overall_score en visa_tests desde el inicio (no depender del webhook)
+      await this.supabase
+        .from('visa_tests')
+        .update({
+          overall_score: result.totalScore,
+          metadata: { approval_probability: result.approvalProbability }
+        })
+        .eq('id', test.id);
+
       // Create the score breakdown
       await this.supabase.from('visa_score_breakdown').insert({
         test_id: test.id,
@@ -155,13 +164,25 @@ export class VisaTestService {
       .eq('test_id', testId)
       .maybeSingle();
 
+    // Fallback: si overall_score sigue null pero hay breakdown, computar desde breakdown
+    // Cubre tests creados antes del fix de submitTest
+    const breakdownTotal = breakdown
+      ? (breakdown.economic_points || 0) +
+        (breakdown.rootedness_points || 0) +
+        (breakdown.travel_history_points || 0) +
+        (breakdown.migration_history_points || 0) +
+        (breakdown.personal_points || 0)
+      : null;
+
+    const overallScore = test.overall_score ?? breakdownTotal;
+
     return {
-      overall_score: test.overall_score,
+      overall_score: overallScore,
       approval_probability: test.metadata?.approval_probability || 0,
       category:
-        test.overall_score > 700
+        overallScore > 700
           ? 'HIGH'
-          : test.overall_score > 400
+          : overallScore > 400
           ? 'MEDIUM'
           : 'LOW',
       breakdown: {

@@ -69,6 +69,13 @@ export class PaymentsService {
       console.log('🧾 resultado update:', updateData);
       console.log('❌ error update:', error);
 
+      // Registrar transacción en tabla payments para que Phase 1 (resolve) funcione
+      await this.supabase.from('payments').upsert({
+        wompi_transaction_id: transaction?.id,
+        test_id: testId,
+        status: transaction?.status || 'APPROVED'
+      }, { onConflict: 'wompi_transaction_id' });
+
       await this.visaTestService.generateScore(testId);
 
     } catch (error) {

@@ -186,19 +186,33 @@ function GraciasContent() {
       return;
     }
 
+    let resultAttempts = 0;
+    const maxResultAttempts = 40; // ~2 minutos esperando que el webhook confirme el pago
+
     const intervalId = setInterval(async () => {
+      resultAttempts++;
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
-        
+
+        // 403 = pago aún no confirmado en BD (webhook pendiente). Seguir esperando.
+        if (res.status === 403) {
+          if (resultAttempts >= maxResultAttempts) {
+            clearInterval(intervalId);
+            setError("El pago está tomando más tiempo en procesarse. Por favor recarga la página en unos minutos o contacta soporte.");
+            setLoading(false);
+          }
+          return;
+        }
+
         if (!res.ok) {
           clearInterval(intervalId);
-          setError("No se pudo encontrar tu análisis o tu pago no ha sido aprobado. Contacta soporte.");
+          setError("No se pudo encontrar tu análisis. Contacta soporte.");
           setLoading(false);
           return;
         }
 
         const data = await res.json();
-        if (data && data.overall_score) {
+        if (data && data.overall_score !== undefined && data.overall_score !== null) {
           setResult(data);
           setLoading(false);
           clearInterval(intervalId);
