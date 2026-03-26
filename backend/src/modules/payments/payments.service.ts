@@ -194,6 +194,66 @@ export class PaymentsService {
   }
 
   // =============================
+  // RESOLVE BY WOMPI TRANSACTION ID
+  // =============================
+  async resolveByWompiId(wompiId: string): Promise<{ testId: string | null }> {
+    try {
+      const privateKey = process.env.WOMPI_PRIVATE_KEY;
+      if (!privateKey) {
+        this.logger.error('WOMPI_PRIVATE_KEY no configurado');
+        return { testId: null };
+      }
+
+      // 1. Obtener la transacción por ID directo (GET /transactions/{id})
+      const res = await fetch(
+        `https://production.wompi.co/v1/transactions/${wompiId}`,
+        { headers: { Authorization: `Bearer ${privateKey}` } }
+      );
+
+      if (!res.ok) {
+        this.logger.error(`Error consultando Wompi transaction ${wompiId}: ${res.status}`);
+        return { testId: null };
+      }
+
+      const data = await res.json();
+      const transaction = data?.data;
+      const reference = transaction?.reference ?? null;
+      const status = transaction?.status;
+
+      this.logger.log(`resolveByWompiId ${wompiId} → reference: ${reference}, status: ${status}`);
+
+      if (!reference) {
+        this.logger.error(`No se encontró reference en transacción ${wompiId}`);
+        return { testId: null };
+      }
+
+      // 2. Si la transacción está APPROVED, marcar el test como paid
+      if (status === 'APPROVED') {
+        const { error } = await this.supabase
+          .from('visa_tests')
+          .update({ status: 'paid' })
+          .eq('id', reference)
+          .neq('status', 'paid'); // evitar update innecesario si ya está paid
+
+        if (error) {
+          this.logger.error(`Error actualizando status a paid para ${reference}: ${error.message}`);
+        } else {
+          this.logger.log(`✅ Test ${reference} marcado como paid via wompiId ${wompiId}`);
+          // Disparar generación de score en background (no bloquea la respuesta)
+          this.visaTestService.generateScore(reference).catch(err =>
+            this.logger.error(`Error en generateScore para ${reference}: ${err.message}`)
+          );
+        }
+      }
+
+      return { testId: reference };
+    } catch (err: any) {
+      this.logger.error(`resolveByWompiId error: ${err.message}`);
+      return { testId: null };
+    }
+  }
+
+  // =============================
   // HELPER
   // =============================
   async findByTransactionId(transactionId: string) {

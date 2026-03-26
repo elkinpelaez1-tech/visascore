@@ -20,6 +20,12 @@ export class PaymentsController {
   async debug(@Param('transactionId') transactionId: string) {
     return { message: 'ok' };
   }
+  @Post('resolve')
+  async resolveByWompiId(@Body('wompiId') wompiId: string) {
+    if (!wompiId) return { testId: null, message: 'wompiId requerido' };
+    return this.paymentsService.resolveByWompiId(wompiId);
+  }
+
   @Post('verify')
   async verify(@Body('testId') testId: string) {
     if (!testId) return { unlocked: false, message: 'testId requerido' };

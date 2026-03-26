@@ -113,28 +113,10 @@ const getCategoryDetails = (category: string) => {
 
 function GraciasContent() {
   const searchParams = useSearchParams();
-  // NOTA: ignoramos searchParams.get("id") — ese es el ID de transacción de Wompi
-  // (ej: 1314-xxx), NO el testId. El testId real viene SOLO de sessionStorage.
-  const urlTestId = searchParams.get("testId");
+  // Wompi siempre redirige con ?id=<wompiTransactionId>&env=prod
+  const wompiId = searchParams.get("id");
 
-  // Lazy initializer: se ejecuta UNA sola vez en el mount.
-  // Prioridad: ?testId= en URL → sessionStorage → null
-  const [testId] = useState<string | null>(() => {
-    if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") return urlTestId;
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("pendingTestId");
-      if (stored && stored !== "undefined" && stored !== "null") return stored;
-    }
-    return null;
-  });
-
-  // Limpiar sessionStorage después del mount, una sola vez
-  useEffect(() => {
-    sessionStorage.removeItem("pendingTestId");
-  }, []);
-
-  const isTestIdValid = !!testId && testId !== "undefined" && testId !== "null";
-
+  const [testId, setTestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -143,53 +125,48 @@ function GraciasContent() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloading, setDownloading] = useState(false);
 
-  // Si no hay testId en sessionStorage ni en URL, detener el loading inmediatamente
+  // PASO 1: resolver el testId real a partir del wompiId (fuente de verdad: API de Wompi)
   useEffect(() => {
-    if (!testId) {
-      setLoading(false);
-    }
-  }, [testId]);
-
-  // VERIFICACIÓN DE PAGO: llamar al backend UNA vez para asegurar status='paid'
-  // Esto es el fallback si el webhook de Wompi no actualizó el status correctamente
-  useEffect(() => {
-    if (!testId || testId === "undefined" || testId === "null") return;
-
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ testId }),
-    })
-      .then(r => r.json())
-      .then(d => console.log("🔐 verify result:", d))
-      .catch(err => console.error("verify error:", err));
-  }, [testId]);
-
-  // FASE 2: RESULT (obtener datos del reporte)
-  useEffect(() => {
-    if (!testId || testId === "undefined" || testId === "null") return;
-
-    // GUARD: Evitar que transactionIds rebotados generen polling basura
-    // Los IDs de checkout UI (o de la tabla de tests) son UUID o Hashes. 
-    // Los de transaccion puros de Wompi suelen iniciar con números tipo "1314-"
-    if (!testId || testId.startsWith('1314')) {
-      console.error('❌ testId inválido:', testId);
-      setError('No se pudo recuperar tu análisis. Contacta soporte.');
+    if (!wompiId) {
       setLoading(false);
       return;
     }
 
-    let resultAttempts = 0;
-    const maxResultAttempts = 40; // ~2 minutos esperando que el webhook confirme el pago
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wompiId }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.testId) {
+          setTestId(d.testId);
+        } else {
+          setError("No se pudo asociar el pago con tu análisis. Contacta soporte.");
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        setError("Error al verificar tu pago. Contacta soporte.");
+        setLoading(false);
+      });
+  }, [wompiId]);
+
+  // PASO 2: una vez resuelto el testId, obtener el resultado
+  useEffect(() => {
+    if (!testId) return;
+
+    let attempts = 0;
+    const maxAttempts = 40; // ~2 minutos
 
     const intervalId = setInterval(async () => {
-      resultAttempts++;
+      attempts++;
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
 
-        // 403 = pago aún no confirmado en BD (webhook pendiente). Seguir esperando.
+        // 403 = pago aún no confirmado en BD. Seguir esperando.
         if (res.status === 403) {
-          if (resultAttempts >= maxResultAttempts) {
+          if (attempts >= maxAttempts) {
             clearInterval(intervalId);
             setError("El pago está tomando más tiempo en procesarse. Por favor recarga la página en unos minutos o contacta soporte.");
             setLoading(false);
@@ -287,7 +264,7 @@ function GraciasContent() {
     );
   }
 
-  if (!isTestIdValid) {
+  if (!wompiId) {
     return (
       <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center p-4">
         <div className="bg-white p-10 rounded-[24px] shadow-[0_10px_25px_rgba(0,0,0,0.05)] text-center max-w-md w-full border border-slate-100">

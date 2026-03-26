@@ -28,18 +28,18 @@ function PaywallContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.paymentUrl) {
-            sessionStorage.setItem('pendingTestId', testId);
+            if (testId) localStorage.setItem('pendingTestId', testId);
             window.location.href = data.paymentUrl;
             return;
           }
         }
       }
       // Fallback robusto
-      sessionStorage.setItem('pendingTestId', testId ?? '');
+      if (testId) localStorage.setItem('pendingTestId', testId);
       window.location.href = testId ? `https://checkout.wompi.co/l/74koZj?reference=${testId}` : "https://checkout.wompi.co/l/74koZj";
     } catch (err) {
       console.error("Error redirecting to payment:", err);
-      sessionStorage.setItem('pendingTestId', testId ?? '');
+      if (testId) localStorage.setItem('pendingTestId', testId);
       window.location.href = testId ? `https://checkout.wompi.co/l/74koZj?reference=${testId}` : "https://checkout.wompi.co/l/74koZj";
     } finally {
       setIsLoading(false);
