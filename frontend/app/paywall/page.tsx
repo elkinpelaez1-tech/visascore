@@ -21,29 +21,22 @@ function PaywallContent() {
     try {
       if (testId) {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/create`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ testId }),
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.paymentUrl) {
-            if (testId) localStorage.setItem('pendingTestId', testId);
-            window.location.href = data.paymentUrl;
-            return;
-          }
+        
+        const data = await res.json();
+        
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl;
+        } else {
+          console.error("No paymentUrl received", data);
+          setIsLoading(false);
         }
       }
-      // Fallback: construir URL de checkout directamente con /p/ para garantizar reference
-      const pubKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
-      const redirectUrl = encodeURIComponent("https://visascore.info/gracias");
-      window.location.href = `https://checkout.wompi.co/p/?public-key=${pubKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
     } catch (err) {
       console.error("Error redirecting to payment:", err);
-      const pubKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
-      const redirectUrl = encodeURIComponent("https://visascore.info/gracias");
-      window.location.href = `https://checkout.wompi.co/p/?public-key=${pubKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
-    } finally {
       setIsLoading(false);
     }
   };
