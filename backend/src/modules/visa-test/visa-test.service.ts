@@ -108,18 +108,36 @@ export class VisaTestService {
     return data;
   }
 
-  async getResult(testId: string, currentUserId?: string) {
-    console.log('[DEBUG] getResult TEST ID:', testId);
-    console.log('[DEBUG] SUPABASE_URL:', process.env.SUPABASE_URL);
-    
-    // Primero probar la conexión simple sin joins
-    const { data: testDumb, error: errorDumb } = await this.supabase
-      .from('visa_tests')
-      .select('*')
-      .limit(1);
-    console.log('[DEBUG] SIMPLE QUERY RESULT:', testDumb, 'ERROR:', errorDumb);
+  // Verifica con Wompi si existe una transacción APPROVED para este testId como reference
+  private async checkWompiPayment(testId: string): Promise<boolean> {
+    const privateKey = process.env.WOMPI_PRIVATE_KEY;
+    if (!privateKey) return false;
+    try {
+      const res = await fetch(
+        `https://production.wompi.co/v1/transactions?reference=${testId}`,
+        { headers: { Authorization: `Bearer ${privateKey}` } }
+      );
+      if (!res.ok) {
+        console.error(`[Wompi] Error consultando transacciones: ${res.status}`);
+        return false;
+      }
+      const data = await res.json();
+      const transactions: any[] = data?.data ?? [];
+      const approved = transactions.find((t: any) => t.status === 'APPROVED');
+      if (approved) {
+        console.log(`[Wompi] ✅ Transacción APPROVED encontrada: ${approved.id}`);
+        return true;
+      }
+      console.log(`[Wompi] No hay transacción APPROVED para reference=${testId}`);
+      return false;
+    } catch (err: any) {
+      console.error(`[Wompi] checkWompiPayment error: ${err.message}`);
+      return false;
+    }
+  }
 
-    // ✅ 1. Obtener test SIN JOIN (clave del fix)
+  async getResult(testId: string, currentUserId?: string) {
+    // 1. Obtener test
     let { data: test, error } = await this.supabase
       .from('visa_tests')
       .select('*')
@@ -128,7 +146,7 @@ export class VisaTestService {
 
     if (error || !test) throw new NotFoundException('Test not found');
 
-    // ✅ Seguridad: usuario
+    // 2. Seguridad: usuario
     if (
       currentUserId &&
       test.user_id !== currentUserId &&
@@ -137,12 +155,23 @@ export class VisaTestService {
       throw new ForbiddenException('No tienes permiso para ver este resultado.');
     }
 
-    // ✅ Seguridad: pago
+    // 3. Si status !== 'paid', verificar directamente con Wompi antes de bloquear
     if (test.status !== 'paid') {
-      throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
+      const verified = await this.checkWompiPayment(testId);
+      if (verified) {
+        await this.supabase
+          .from('visa_tests')
+          .update({ status: 'paid' })
+          .eq('id', testId);
+        test = { ...test, status: 'paid' };
+        console.log(`[getResult] Test ${testId} desbloqueado via Wompi API`);
+      } else {
+        throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
+      }
     }
 
-    if (test.status === 'paid' && (test.overall_score === null || test.overall_score === undefined)) {
+    // 4. Generar score si falta
+    if (test.overall_score === null || test.overall_score === undefined) {
       console.log(`Score missing, regenerating for testId: ${testId}`);
       await this.generateScore(testId);
       
