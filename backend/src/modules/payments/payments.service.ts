@@ -134,6 +134,66 @@ export class PaymentsService {
     return { message: 'debug ok', transactionId };
   }
   // =============================
+  // VERIFY & UNLOCK (fallback si el webhook no actualizó el status)
+  // =============================
+  async verifyAndUnlock(testId: string): Promise<{ unlocked: boolean; message: string }> {
+    try {
+      // Primero verificar que el test exista y esté pendiente
+      const { data: test } = await this.supabase
+        .from('visa_tests')
+        .select('id, status')
+        .eq('id', testId)
+        .maybeSingle();
+
+      if (!test) {
+        return { unlocked: false, message: 'Test no encontrado' };
+      }
+
+      // Si ya está pagado, no hacer nada
+      if (test.status === 'paid') {
+        return { unlocked: true, message: 'Ya estaba desbloqueado' };
+      }
+
+      // Consultar Wompi para verificar si existe una transacción APPROVED con esta reference
+      const privateKey = process.env.WOMPI_PRIVATE_KEY;
+      const wompiBase = 'https://production.wompi.co/v1';
+
+      const response = await fetch(
+        `${wompiBase}/transactions?reference=${testId}`,
+        { headers: { Authorization: `Bearer ${privateKey}` } }
+      );
+
+      if (!response.ok) {
+        console.error('❌ Error consultando Wompi:', response.status);
+        return { unlocked: false, message: 'Error consultando Wompi' };
+      }
+
+      const wompiData = await response.json();
+      const transactions: any[] = wompiData?.data ?? [];
+      console.log(`🔎 Wompi transactions para ${testId}:`, JSON.stringify(transactions.map(t => ({ id: t.id, status: t.status, reference: t.reference }))));
+
+      const approved = transactions.find(t => t.status === 'APPROVED');
+
+      if (!approved) {
+        return { unlocked: false, message: 'No hay transacción APPROVED para este testId' };
+      }
+
+      // Hay pago aprobado → desbloquear
+      await this.supabase
+        .from('visa_tests')
+        .update({ status: 'paid' })
+        .eq('id', testId);
+
+      console.log(`✅ Test ${testId} desbloqueado via verificación Wompi. TxId: ${approved.id}`);
+      return { unlocked: true, message: 'Desbloqueado correctamente' };
+
+    } catch (err: any) {
+      console.error('❌ verifyAndUnlock error:', err.message);
+      return { unlocked: false, message: 'Error interno' };
+    }
+  }
+
+  // =============================
   // HELPER
   // =============================
   async findByTransactionId(transactionId: string) {

@@ -186,6 +186,21 @@ function GraciasContent() {
     return () => clearInterval(interval);
   }, [wompiId, urlTestId]);
 
+  // VERIFICACIÓN DE PAGO: llamar al backend UNA vez para asegurar status='paid'
+  // Esto es el fallback si el webhook de Wompi no actualizó el status correctamente
+  useEffect(() => {
+    if (!testId || testId === "undefined" || testId === "null") return;
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testId }),
+    })
+      .then(r => r.json())
+      .then(d => console.log("🔐 verify result:", d))
+      .catch(err => console.error("verify error:", err));
+  }, [testId]);
+
   // FASE 2: RESULT (obtener datos del reporte)
   useEffect(() => {
     if (!testId || testId === "undefined" || testId === "null") return;

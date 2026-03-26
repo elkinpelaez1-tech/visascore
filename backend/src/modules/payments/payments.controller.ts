@@ -20,6 +20,12 @@ export class PaymentsController {
   async debug(@Param('transactionId') transactionId: string) {
     return { message: 'ok' };
   }
+  @Post('verify')
+  async verify(@Body('testId') testId: string) {
+    if (!testId) return { unlocked: false, message: 'testId requerido' };
+    return this.paymentsService.verifyAndUnlock(testId);
+  }
+
   @Post('create')
   async create(@Body('testId') testId: string) {
     this.logger.log(`Payment creation requested for test: ${testId}`);
