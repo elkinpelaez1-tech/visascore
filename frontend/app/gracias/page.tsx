@@ -113,12 +113,13 @@ const getCategoryDetails = (category: string) => {
 
 function GraciasContent() {
   const searchParams = useSearchParams();
-  const wompiId = searchParams.get("id");
+  // NOTA: ignoramos searchParams.get("id") — ese es el ID de transacción de Wompi
+  // (ej: 1314-xxx), NO el testId. El testId real viene SOLO de sessionStorage.
   const urlTestId = searchParams.get("testId");
 
   // Lazy initializer: se ejecuta UNA sola vez en el mount.
   // Prioridad: ?testId= en URL → sessionStorage → null
-  const [testId, setTestId] = useState<string | null>(() => {
+  const [testId] = useState<string | null>(() => {
     if (urlTestId && urlTestId !== "undefined" && urlTestId !== "null") return urlTestId;
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("pendingTestId");
@@ -142,49 +143,12 @@ function GraciasContent() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloading, setDownloading] = useState(false);
 
-  // FASE 1: RESOLVE (obtener testId)
+  // Si no hay testId en sessionStorage ni en URL, detener el loading inmediatamente
   useEffect(() => {
-    // Si ya tenemos testId (por URL o sessionStorage), pasamos a Fase 2
-    if (testId) {
-      return;
-    }
-    
-    // Si no tenemos nada de Wompi, no hay que hacer nada acá
-    if (!wompiId || wompiId === "undefined" || wompiId === "null") {
+    if (!testId) {
       setLoading(false);
-      return;
     }
-
-    let attempts = 0;
-    const maxAttempts = 60; // Hasta 2 minutos esperando al banco/webhook
-
-    const interval = setInterval(async () => {
-      attempts++;
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve/${wompiId}`);
-        const data = await res.json();
-
-        if (data && data.testId) {
-          // Detener polling de fase 1
-          clearInterval(interval);
-          // Guardar testId (activa automáticamente Fase 2)
-          setTestId(data.testId);
-          return;
-        }
-
-        // Si sobrepasa los intentos máximos sin respuesta del webhook
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setLoading(false);
-          setError("El pago está tomando más tiempo en procesarse por parte de su banco. Por favor verifique su correo en unos minutos o recargue esta página.");
-        }
-      } catch (err) {
-        console.error("Error resolving transaction:", err);
-      }
-    }, 2500); // Polling de resolve cada 2.5 seg
-
-    return () => clearInterval(interval);
-  }, [wompiId, urlTestId]);
+  }, [testId]);
 
   // VERIFICACIÓN DE PAGO: llamar al backend UNA vez para asegurar status='paid'
   // Esto es el fallback si el webhook de Wompi no actualizó el status correctamente
