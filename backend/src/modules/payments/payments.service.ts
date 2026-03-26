@@ -36,13 +36,15 @@ export class PaymentsService {
       throw new Error('❌ test_id does not exist');
     }
 
-    const baseUrl = process.env.CHECKOUT_UI_URL;
+    const publicKey = process.env.WOMPI_PUBLIC_KEY;
     const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
-    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
+    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias`);
 
-    return {
-      paymentUrl: `${baseUrl}?reference=${testId}&redirect-url=${redirectUrl}`
-    };
+    // Wompi /p/ acepta reference dinámico.
+    // Los links /l/ pre-configurados ignoran el parámetro reference.
+    const paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
+
+    return { paymentUrl };
   }
 
   // =============================

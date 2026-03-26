@@ -34,13 +34,15 @@ function PaywallContent() {
           }
         }
       }
-      // Fallback robusto
-      if (testId) localStorage.setItem('pendingTestId', testId);
-      window.location.href = testId ? `https://checkout.wompi.co/l/74koZj?reference=${testId}` : "https://checkout.wompi.co/l/74koZj";
+      // Fallback: construir URL de checkout directamente con /p/ para garantizar reference
+      const pubKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
+      const redirectUrl = encodeURIComponent("https://visascore.info/gracias");
+      window.location.href = `https://checkout.wompi.co/p/?public-key=${pubKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
     } catch (err) {
       console.error("Error redirecting to payment:", err);
-      if (testId) localStorage.setItem('pendingTestId', testId);
-      window.location.href = testId ? `https://checkout.wompi.co/l/74koZj?reference=${testId}` : "https://checkout.wompi.co/l/74koZj";
+      const pubKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
+      const redirectUrl = encodeURIComponent("https://visascore.info/gracias");
+      window.location.href = `https://checkout.wompi.co/p/?public-key=${pubKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
     } finally {
       setIsLoading(false);
     }
