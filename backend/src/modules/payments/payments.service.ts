@@ -44,6 +44,9 @@ export class PaymentsService {
     // Los links /l/ pre-configurados ignoran el parámetro reference.
     const paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
 
+    this.logger.log(`💳 createPayment → publicKey present: ${!!publicKey}, testId: ${testId}`);
+    this.logger.log(`💳 paymentUrl: ${paymentUrl}`);
+
     return { paymentUrl };
   }
 
