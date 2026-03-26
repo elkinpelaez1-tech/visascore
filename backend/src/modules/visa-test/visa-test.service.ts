@@ -49,22 +49,33 @@ export class VisaTestService {
       }
 
       const result = this.scoringService.calculate(profile);
-      await this.supabase.from('ds160_profiles').insert({
+      
+      const { error: profileErr } = await this.supabase.from('ds160_profiles').insert({
         test_id: test.id,
         ...profile
       });
+      
+      if (profileErr) {
+        console.error('❌ Supabase ds160_profiles insert error:', JSON.stringify(profileErr, null, 2));
+        throw profileErr;
+      }
 
       // Guardar overall_score en visa_tests desde el inicio (no depender del webhook)
-      await this.supabase
+      const { error: updateErr } = await this.supabase
         .from('visa_tests')
         .update({
           overall_score: result.totalScore,
           metadata: { approval_probability: result.approvalProbability }
         })
         .eq('id', test.id);
+        
+      if (updateErr) {
+        console.error('❌ Supabase visa_tests update error:', JSON.stringify(updateErr, null, 2));
+        throw updateErr;
+      }
 
       // Create the score breakdown
-      await this.supabase.from('visa_score_breakdown').insert({
+      const { error: breakdownErr } = await this.supabase.from('visa_score_breakdown').insert({
         test_id: test.id,
         personal_points: result.breakdown.personal,
         economic_points: result.breakdown.economic,
@@ -76,6 +87,11 @@ export class VisaTestService {
         recommendations: result.recommendations,
         improvement_simulations: result.simulations
       });
+      
+      if (breakdownErr) {
+        console.error('❌ Supabase visa_score_breakdown insert error:', JSON.stringify(breakdownErr, null, 2));
+        throw breakdownErr;
+      }
 
       return {
         testId: test.id,
