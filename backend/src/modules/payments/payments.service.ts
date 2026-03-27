@@ -38,7 +38,7 @@ export class PaymentsService {
 
     const publicKey = process.env.WOMPI_PUBLIC_KEY;
     const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
-    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias`);
+    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
 
     // Wompi /p/ acepta reference dinámico.
     // Los links /l/ pre-configurados ignoran el parámetro reference.
@@ -201,7 +201,7 @@ export class PaymentsService {
   // =============================
   // RESOLVE BY WOMPI TRANSACTION ID
   // =============================
-  async resolveByWompiId(wompiId: string): Promise<{ testId: string | null }> {
+  async resolveByWompiId(wompiId: string, frontendTestId?: string): Promise<{ testId: string | null }> {
     try {
       const privateKey = process.env.WOMPI_PRIVATE_KEY;
       if (!privateKey) {
@@ -222,36 +222,68 @@ export class PaymentsService {
 
       const data = await res.json();
       const transaction = data?.data;
+      
+      // ✅ LOG TODO TRANSACTION en production para debugging
+      this.logger.log(`Wompi Transaction Payload Completo: ${JSON.stringify(transaction)}`);
+
       const reference = transaction?.reference ?? null;
       const status = transaction?.status;
 
-      this.logger.log(`resolveByWompiId ${wompiId} → reference: ${reference}, status: ${status}`);
+      let finalTestId = reference;
 
-      if (!reference) {
-        this.logger.error(`No se encontró reference en transacción ${wompiId}`);
+      if (!finalTestId && frontendTestId) {
+        finalTestId = frontendTestId;
+        this.logger.warn(`Reference no encontrada en Wompi para ${wompiId}, usando testId del frontend: ${frontendTestId}`);
+      }
+
+      // IMPORTANTE: Asegurarnos que wompiId no haya sido usado ya por otro testId para evitar bypass
+      const { data: existingPayment } = await this.supabase
+        .from('payments')
+        .select('test_id')
+        .eq('wompi_transaction_id', wompiId)
+        .maybeSingle();
+
+      if (existingPayment?.test_id) {
+        // Ya sabemos a quién pertenece
+        finalTestId = existingPayment.test_id;
+        this.logger.log(`Usando testId mapeado desde la base de datos: ${finalTestId}`);
+      }
+
+      if (!finalTestId) {
+        this.logger.error(`No hay forma de asociar el wompiId ${wompiId} a un testId`);
         return { testId: null };
       }
+
+      this.logger.log(`resolveByWompiId ${wompiId} → finalTestId: ${finalTestId}, status: ${status}`);
 
       // 2. Si la transacción está APPROVED, marcar el test como paid
       if (status === 'APPROVED') {
         const { error } = await this.supabase
           .from('visa_tests')
           .update({ status: 'paid' })
-          .eq('id', reference)
+          .eq('id', finalTestId)
           .neq('status', 'paid'); // evitar update innecesario si ya está paid
 
         if (error) {
-          this.logger.error(`Error actualizando status a paid para ${reference}: ${error.message}`);
+          this.logger.error(`Error actualizando status a paid para ${finalTestId}: ${error.message}`);
         } else {
-          this.logger.log(`✅ Test ${reference} marcado como paid via wompiId ${wompiId}`);
+          this.logger.log(`✅ Test ${finalTestId} marcado como paid via wompiId ${wompiId}`);
+          
+          // Guardar explícitamente el pago en BD si no estaba antes, garantizando la persistencia
+          await this.supabase.from('payments').upsert({
+            wompi_transaction_id: wompiId,
+            test_id: finalTestId,
+            status: 'APPROVED'
+          }, { onConflict: 'wompi_transaction_id' });
+
           // Disparar generación de score en background (no bloquea la respuesta)
-          this.visaTestService.generateScore(reference).catch(err =>
-            this.logger.error(`Error en generateScore para ${reference}: ${err.message}`)
+          this.visaTestService.generateScore(finalTestId).catch(err =>
+            this.logger.error(`Error en generateScore para ${finalTestId}: ${err.message}`)
           );
         }
       }
 
-      return { testId: reference };
+      return { testId: finalTestId };
     } catch (err: any) {
       this.logger.error(`resolveByWompiId error: ${err.message}`);
       return { testId: null };

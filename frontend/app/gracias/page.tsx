@@ -115,6 +115,8 @@ function GraciasContent() {
   const searchParams = useSearchParams();
   // Wompi siempre redirige con ?id=<wompiTransactionId>&env=prod
   const wompiId = searchParams.get("id");
+  // Ahora traemos testId inyectado como parámetro en el redirect
+  const queryTestId = searchParams.get("testId");
 
   const [testId, setTestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,7 @@ function GraciasContent() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [downloading, setDownloading] = useState(false);
 
-  // PASO 1: resolver el testId real a partir del wompiId (fuente de verdad: API de Wompi)
+  // PASO 1: resolver el testId real a partir del wompiId (fuente de verdad: API del Backend o Fallback de URL)
   useEffect(() => {
     if (!wompiId) {
       setLoading(false);
@@ -135,7 +137,7 @@ function GraciasContent() {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wompiId }),
+      body: JSON.stringify({ wompiId, testId: queryTestId }), // Se envía testId para fallback si no hay reference
     })
       .then(r => r.json())
       .then(d => {
@@ -150,7 +152,7 @@ function GraciasContent() {
         setError("Error al verificar tu pago. Contacta soporte.");
         setLoading(false);
       });
-  }, [wompiId]);
+  }, [wompiId, queryTestId]);
 
   // PASO 2: una vez resuelto el testId, obtener el resultado
   useEffect(() => {

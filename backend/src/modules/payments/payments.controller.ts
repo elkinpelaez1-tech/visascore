@@ -21,9 +21,12 @@ export class PaymentsController {
     return { message: 'ok' };
   }
   @Post('resolve')
-  async resolveByWompiId(@Body('wompiId') wompiId: string) {
+  async resolveByWompiId(
+    @Body('wompiId') wompiId: string, 
+    @Body('testId') testId?: string
+  ) {
     if (!wompiId) return { testId: null, message: 'wompiId requerido' };
-    return this.paymentsService.resolveByWompiId(wompiId);
+    return this.paymentsService.resolveByWompiId(wompiId, testId);
   }
 
   @Post('verify')
