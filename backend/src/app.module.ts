@@ -9,6 +9,7 @@ import { VisaTestModule } from './modules/visa-test/visa-test.module';
 import { ScoringModule } from './modules/scoring/scoring.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { ConfigModule } from '@nestjs/config';
 import { MailModule } from './modules/mail/mail.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { MailModule } from './modules/mail/mail.module';
         ttl: 60000,
         limit: 10,
     }]),
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule, 
     UsersModule, 
     VisaTestModule, 

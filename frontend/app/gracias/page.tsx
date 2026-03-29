@@ -117,8 +117,9 @@ function GraciasContent() {
   const wompiId = searchParams.get("id");
   // Ahora traemos testId inyectado como parámetro en el redirect
   const queryTestId = searchParams.get("testId");
+  console.log('🧾 testId en frontend:', queryTestId);
 
-  const [testId, setTestId] = useState<string | null>(null);
+  const [testId, setTestId] = useState<string | null>(queryTestId);
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +163,13 @@ function GraciasContent() {
     const maxAttempts = 40; // ~2 minutos
 
     const intervalId = setInterval(async () => {
+      // Validar que testId sea válido antes del fetch
+      if (!testId || testId === "undefined") {
+        console.error("❌ Invalid testId for result fetch:", testId);
+        clearInterval(intervalId);
+        return;
+      }
+
       attempts++;
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);

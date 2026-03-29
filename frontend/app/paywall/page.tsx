@@ -28,10 +28,13 @@ function PaywallContent() {
         
         const data = await res.json();
         
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
+        // El backend responde ahora con 'checkoutUrl' según requerimiento 
+        const urlToRedirect = data.checkoutUrl || data.paymentUrl;
+        
+        if (urlToRedirect) {
+          window.location.href = urlToRedirect;
         } else {
-          console.error("No paymentUrl received", data);
+          console.error("No checkoutUrl received", data);
           setIsLoading(false);
         }
       }

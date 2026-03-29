@@ -21,6 +21,7 @@ export class VisaTestService {
 
   async submitTest(profile: DS160Profile, userId: string = '00000000-0000-0000-0000-000000000000') {
     try {
+      console.log('🚀 submitTest iniciado');
       console.log('📥 profile data:', profile);
 
       const testId = randomUUID();
@@ -38,6 +39,10 @@ export class VisaTestService {
         .insert(payload)
         .select()
         .single();
+      
+      if (test) {
+        console.log('✅ Test creado:', test.id);
+      }
 
       if (testErr) {
         console.error('❌ Supabase FULL error:', JSON.stringify(testErr, null, 2));
@@ -48,30 +53,59 @@ export class VisaTestService {
         throw new Error('❌ Failed to create visa test');
       }
 
-      const result = this.scoringService.calculate(profile);
+      console.log('🧠 Antes de scoring');
+      console.log(JSON.stringify(profile, null, 2));
+
+      let result;
+      try {
+        result = this.scoringService.calculate(profile);
+        console.log('✅ Score calculado');
+      } catch (error) {
+        console.error('❌ Error en scoring:', error);
+        throw error;
+      }
       
-      const { error: profileErr } = await this.supabase.from('ds160_profiles').insert({
+      // Safe mapping for ds160_profiles (snake_case columns in DB)
+      const payloadToInsert = {
         test_id: test.id,
-        ...profile
-      });
+        has_communicable_disease: profile.hasCommunicableDisease || false,
+        has_mental_physical_disorder: profile.hasMentalPhysicalDisorder || false,
+        has_drug_addiction: profile.hasDrugAddiction || false,
+        has_criminal_record: profile.hasCriminalRecord || false,
+        has_deportation_history: profile.hasDeportationHistory || false,
+        trip_payer: profile.tripPayer || '',
+        social_media_platforms: profile.socialMediaPlatforms || '',
+        allows_social_media_check: profile.allowsSocialMediaCheck || false,
+        intended_cities: profile.intendedCities || '',
+        intended_duration_days: profile.intendedDurationDays || 0,
+        countries_visited: profile.countriesVisited || ''
+      };
+
+      console.log('📦 Antes de insert ds160_profiles');
+      const { error: profileErr } = await this.supabase.from('ds160_profiles').insert(payloadToInsert);
       
       if (profileErr) {
-        console.error('❌ Supabase ds160_profiles insert error:', JSON.stringify(profileErr, null, 2));
+        console.error('❌ Supabase ds160_profiles insert error:', profileErr);
         throw profileErr;
       }
+      
+      console.log('✅ Insert ds160_profiles OK');
 
-      // Guardar overall_score en visa_tests desde el inicio (no depender del webhook)
+      // Update visa_tests with score and full profile backup
       const { error: updateErr } = await this.supabase
         .from('visa_tests')
         .update({
           overall_score: result.totalScore,
-          metadata: { approval_probability: result.approvalProbability }
+          metadata: { 
+            profile: profile,
+            results: result,
+            approval_probability: result.approvalProbability 
+          }
         })
         .eq('id', test.id);
         
       if (updateErr) {
-        console.error('❌ Supabase visa_tests update error:', JSON.stringify(updateErr, null, 2));
-        throw updateErr;
+        console.error('❌ Supabase visa_tests update error:', updateErr);
       }
 
       // Create the score breakdown
@@ -89,18 +123,17 @@ export class VisaTestService {
       });
       
       if (breakdownErr) {
-        console.error('❌ Supabase visa_score_breakdown insert error:', JSON.stringify(breakdownErr, null, 2));
-        throw breakdownErr;
+        console.error('❌ Supabase visa_score_breakdown error:', breakdownErr);
       }
 
       return {
         testId: test.id,
         status: 'locked',
-        message: 'Tu VisaScore está listo. Realiza el pago para desbloquear.'
+        results: result
       };
     } catch (error) {
-      console.error('❌ submit error:', error);
-      throw error;
+      console.error('🔴 CRITICAL ERROR in submitTest:', error);
+      throw new InternalServerErrorException(error.message || 'Error processing test');
     }
   }
 
@@ -124,34 +157,6 @@ export class VisaTestService {
     return data;
   }
 
-  // Verifica con Wompi si existe una transacción APPROVED para este testId como reference
-  private async checkWompiPayment(testId: string): Promise<boolean> {
-    const privateKey = process.env.WOMPI_PRIVATE_KEY;
-    if (!privateKey) return false;
-    try {
-      const res = await fetch(
-        `https://production.wompi.co/v1/transactions?reference=${testId}`,
-        { headers: { Authorization: `Bearer ${privateKey}` } }
-      );
-      if (!res.ok) {
-        console.error(`[Wompi] Error consultando transacciones: ${res.status}`);
-        return false;
-      }
-      const data = await res.json();
-      const transactions: any[] = data?.data ?? [];
-      const approved = transactions.find((t: any) => t.status === 'APPROVED');
-      if (approved) {
-        console.log(`[Wompi] ✅ Transacción APPROVED encontrada: ${approved.id}`);
-        return true;
-      }
-      console.log(`[Wompi] No hay transacción APPROVED para reference=${testId}`);
-      return false;
-    } catch (err: any) {
-      console.error(`[Wompi] checkWompiPayment error: ${err.message}`);
-      return false;
-    }
-  }
-
   async getResult(testId: string, currentUserId?: string) {
     // 1. Obtener test
     let { data: test, error } = await this.supabase
@@ -171,19 +176,9 @@ export class VisaTestService {
       throw new ForbiddenException('No tienes permiso para ver este resultado.');
     }
 
-    // 3. Si status !== 'paid', verificar directamente con Wompi antes de bloquear
+    // 3. Status STRICT check: The webhook is the sole mutator
     if (test.status !== 'paid') {
-      const verified = await this.checkWompiPayment(testId);
-      if (verified) {
-        await this.supabase
-          .from('visa_tests')
-          .update({ status: 'paid' })
-          .eq('id', testId);
-        test = { ...test, status: 'paid' };
-        console.log(`[getResult] Test ${testId} desbloqueado via Wompi API`);
-      } else {
-        throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
-      }
+      throw new ForbiddenException('Resultado bloqueado. Pago requerido.');
     }
 
     // 4. Generar score si falta
@@ -266,11 +261,21 @@ export class VisaTestService {
 
       const result = this.scoringService.calculate(profileData as DS160Profile);
 
+      const { data: currentTest } = await this.supabase
+        .from('visa_tests')
+        .select('metadata')
+        .eq('id', testId)
+        .maybeSingle();
+
+      const existingMetadata = currentTest?.metadata || {};
+
       await this.supabase
         .from('visa_tests')
         .update({
           overall_score: result.totalScore,
+          approval_probability: result.approvalProbability, // También poblamos la columna
           metadata: { 
+            ...existingMetadata,
             approval_probability: result.approvalProbability 
           }
         })
@@ -996,9 +1001,9 @@ export class VisaTestService {
       }
 
       const browser = await puppeteer.launch({
-        args: chromium.args,
-        executablePath: execPath,
-        headless: true
+        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
       
       console.log("Browser launched successfully");

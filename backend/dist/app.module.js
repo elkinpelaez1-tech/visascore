@@ -18,6 +18,7 @@ const visa_test_module_1 = require("./modules/visa-test/visa-test.module");
 const scoring_module_1 = require("./modules/scoring/scoring.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const reports_module_1 = require("./modules/reports/reports.module");
+const config_1 = require("@nestjs/config");
 const mail_module_1 = require("./modules/mail/mail.module");
 let AppModule = class AppModule {
 };
@@ -34,6 +35,7 @@ exports.AppModule = AppModule = __decorate([
                     ttl: 60000,
                     limit: 10,
                 }]),
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             visa_test_module_1.VisaTestModule,

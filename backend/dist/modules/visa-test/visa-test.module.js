@@ -17,7 +17,8 @@ exports.VisaTestModule = VisaTestModule;
 exports.VisaTestModule = VisaTestModule = __decorate([
     (0, common_1.Module)({
         providers: [visa_test_service_1.VisaTestService, scoring_service_1.ScoringService],
-        controllers: [visa_test_controller_1.VisaTestController]
+        controllers: [visa_test_controller_1.VisaTestController],
+        exports: [visa_test_service_1.VisaTestService]
     })
 ], VisaTestModule);
 //# sourceMappingURL=visa-test.module.js.map

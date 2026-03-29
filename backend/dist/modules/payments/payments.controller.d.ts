@@ -5,18 +5,25 @@ export declare class PaymentsController {
     constructor(paymentsService: PaymentsService);
     resolve(transactionId: string): Promise<{
         message: string;
+        testId: any;
     }>;
     debug(transactionId: string): Promise<{
         message: string;
     }>;
+    resolveByWompiId(wompiId: string, testId?: string): Promise<{
+        testId: string | null;
+    } | {
+        testId: null;
+        message: string;
+    }>;
+    verify(testId: string): Promise<{
+        unlocked: boolean;
+        message: string;
+    }>;
     create(testId: string): Promise<{
-        paymentUrl: string;
+        checkoutUrl: string;
     }>;
     webhook(body: any): Promise<{
         received: boolean;
-        ignored: boolean;
-    } | {
-        received: boolean;
-        ignored?: undefined;
     }>;
 }

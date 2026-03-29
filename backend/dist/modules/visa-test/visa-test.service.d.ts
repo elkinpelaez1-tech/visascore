@@ -7,7 +7,7 @@ export declare class VisaTestService {
     submitTest(profile: DS160Profile, userId?: string): Promise<{
         testId: any;
         status: string;
-        message: string;
+        results: any;
     }>;
     unlockTest(testId: string): Promise<{
         success: boolean;
@@ -30,6 +30,7 @@ export declare class VisaTestService {
         recommendations: any;
         simulations: any;
     }>;
+    generateScore(testId: string): Promise<void>;
     sendEmail(testId: string, email: string): Promise<{
         success: boolean;
         message: string;

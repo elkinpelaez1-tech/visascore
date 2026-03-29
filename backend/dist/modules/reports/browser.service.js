@@ -22,9 +22,9 @@ let BrowserService = class BrowserService {
                 throw new Error("Chromium executable path not found");
             }
             this.browser = await puppeteer_core_1.default.launch({
-                args: chromium_1.default.args,
-                executablePath: execPath,
+                executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
                 headless: true,
+                args: ["--no-sandbox", "--disable-setuid-sandbox"],
             });
         }
         return this.browser;

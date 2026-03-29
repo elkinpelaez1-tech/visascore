@@ -87,31 +87,56 @@ export default function TestPage() {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   useEffect(() => {
+    console.log('🌐 API URL:', process.env.NEXT_PUBLIC_API_URL);
     if (step === 0) console.log('[Analytics] test_started');
   }, [step]);
 
   const handleNext = async () => {
-    if (step < QUESTIONS.length - 1) {
-      setStep(step + 1);
-    } else {
-      setLoading(true);
-      console.log('[Analytics] test_completed');
-      try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/visa-test/submit`, formData);
-        
-        // Simulation of smart intelligence
-        setIsCapping(true);
-        setTimeout(() => {
-           router.push(`/paywall?id=${response.data.testId}`);
-        }, 4500);
-      } catch (error: any) {
-        console.error("Error submitting test", error);
-        setLoading(false);
-        setIsCapping(false);
-        alert("Ocurrió un error al procesar tu formulario. Por favor revisa tu conexión e intenta de nuevo.");
-      }
+  if (step < QUESTIONS.length - 1) {
+    setStep(step + 1);
+  } else {
+    setLoading(true);
+    console.log('[Analytics] test_completed');
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/visa-test/submit`,
+        formData
+      );
+
+      // Simulation of smart intelligence
+      setIsCapping(true);
+      setTimeout(async () => {
+        // En vez de ir al paywall intermedio, vamos directo a Wompi
+        try {
+          const paymentResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/payments/create`,
+            { testId: response.data.testId }
+          );
+          
+          if (paymentResponse.data.checkoutUrl) {
+            window.location.href = paymentResponse.data.checkoutUrl;
+          } else {
+            console.error("No checkoutUrl received");
+            alert("No se pudo generar el link de pago. Por favor intenta de nuevo.");
+            setLoading(false);
+            setIsCapping(false);
+          }
+        } catch (err) {
+          console.error("Direct redirect failed", err);
+          alert("Error al conectar con la pasarela de pago.");
+          setLoading(false);
+          setIsCapping(false);
+        }
+      }, 4500);
+
+    } catch (error: any) {
+      console.error("Error submitting test", error);
+      setLoading(false);
+      setIsCapping(false);
+      alert("Ocurrió un error al procesar tu formulario. Por favor revisa tu conexión e intenta de nuevo.");
     }
-  };
+  }
+};
 
   const handlePrev = () => {
     if (step > 0) setStep(step - 1);

@@ -12,12 +12,14 @@ const payments_service_1 = require("./payments.service");
 const payments_controller_1 = require("./payments.controller");
 const mail_module_1 = require("../mail/mail.module");
 const reports_module_1 = require("../reports/reports.module");
+const visa_test_module_1 = require("../visa-test/visa-test.module");
+const scoring_module_1 = require("../scoring/scoring.module");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
 exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [mail_module_1.MailModule, reports_module_1.ReportsModule],
+        imports: [mail_module_1.MailModule, reports_module_1.ReportsModule, visa_test_module_1.VisaTestModule, scoring_module_1.ScoringModule],
         providers: [payments_service_1.PaymentsService],
         controllers: [payments_controller_1.PaymentsController]
     })

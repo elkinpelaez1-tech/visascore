@@ -14,9 +14,9 @@ export class BrowserService implements OnModuleDestroy {
       }
 
       this.browser = await puppeteer.launch({
-        args: chromium.args,
-        executablePath: execPath,
+        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
     }
     return this.browser;

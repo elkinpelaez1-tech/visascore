@@ -14,7 +14,8 @@ let ScoringModule = class ScoringModule {
 exports.ScoringModule = ScoringModule;
 exports.ScoringModule = ScoringModule = __decorate([
     (0, common_1.Module)({
-        providers: [scoring_service_1.ScoringService]
+        providers: [scoring_service_1.ScoringService],
+        exports: [scoring_service_1.ScoringService]
     })
 ], ScoringModule);
 //# sourceMappingURL=scoring.module.js.map

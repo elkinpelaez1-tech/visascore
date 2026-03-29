@@ -23,18 +23,38 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
         this.paymentsService = paymentsService;
     }
     async resolve(transactionId) {
-        return { message: 'ok' };
+        const payment = await this.paymentsService.findByTransactionId(transactionId);
+        return {
+            message: 'ok',
+            testId: payment?.test_id || null
+        };
     }
     async debug(transactionId) {
         return { message: 'ok' };
+    }
+    async resolveByWompiId(wompiId, testId) {
+        if (!wompiId)
+            return { testId: null, message: 'wompiId requerido' };
+        return this.paymentsService.resolveByWompiId(wompiId, testId);
+    }
+    async verify(testId) {
+        if (!testId)
+            return { unlocked: false, message: 'testId requerido' };
+        return this.paymentsService.verifyAndUnlock(testId);
     }
     async create(testId) {
         this.logger.log(`Payment creation requested for test: ${testId}`);
         return this.paymentsService.createPayment(testId);
     }
     async webhook(body) {
-        this.logger.log('Webhook Wompi recibido');
-        return this.paymentsService.handleWebhook(body);
+        this.logger.log('🔥 webhook hit');
+        try {
+            await this.paymentsService.handleWebhook(body);
+        }
+        catch (error) {
+            this.logger.error('❌ webhook controller error:', error);
+        }
+        return { received: true };
     }
 };
 exports.PaymentsController = PaymentsController;
@@ -52,6 +72,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "debug", null);
+__decorate([
+    (0, common_1.Post)('resolve'),
+    __param(0, (0, common_1.Body)('wompiId')),
+    __param(1, (0, common_1.Body)('testId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "resolveByWompiId", null);
+__decorate([
+    (0, common_1.Post)('verify'),
+    __param(0, (0, common_1.Body)('testId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "verify", null);
 __decorate([
     (0, common_1.Post)('create'),
     __param(0, (0, common_1.Body)('testId')),

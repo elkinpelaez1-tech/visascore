@@ -7,7 +7,7 @@ export declare class VisaTestController {
     submit(profile: DS160Profile): Promise<{
         testId: any;
         status: string;
-        message: string;
+        results: any;
     }>;
     getReport(id: string): Promise<StreamableFile>;
     getStatus(id: string): Promise<any>;

@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VisaTestService = void 0;
 const common_1 = require("@nestjs/common");
+const crypto_1 = require("crypto");
 const scoring_service_1 = require("../scoring/scoring.service");
 const supabase_js_1 = require("@supabase/supabase-js");
 const resend_1 = require("resend");
@@ -29,42 +30,102 @@ let VisaTestService = class VisaTestService {
         this.resend = new resend_1.Resend(process.env.RESEND_API_KEY || 're_placeholder');
     }
     async submitTest(profile, userId = '00000000-0000-0000-0000-000000000000') {
-        const result = this.scoringService.calculate(profile);
-        const { data: test, error: testErr } = await this.supabase
-            .from('visa_tests')
-            .insert({
-            user_id: userId,
-            overall_score: result.totalScore,
-            status: 'locked',
-            metadata: {
-                approval_probability: result.approvalProbability
+        try {
+            console.log('🚀 submitTest iniciado');
+            console.log('📥 profile data:', profile);
+            const testId = (0, crypto_1.randomUUID)();
+            const payload = {
+                id: testId,
+                user_id: userId,
+                status: 'pending'
+            };
+            console.log('📥 payload enviado:', JSON.stringify(payload, null, 2));
+            const { data: test, error: testErr } = await this.supabase
+                .from('visa_tests')
+                .insert(payload)
+                .select()
+                .single();
+            if (test) {
+                console.log('✅ Test creado:', test.id);
             }
-        })
-            .select()
-            .single();
-        if (testErr)
-            throw new Error(`Test creation failed: ${testErr.message}`);
-        await this.supabase.from('ds160_profiles').insert({
-            test_id: test.id,
-            ...profile
-        });
-        await this.supabase.from('visa_score_breakdown').insert({
-            test_id: test.id,
-            personal_points: result.breakdown.personal,
-            economic_points: result.breakdown.economic,
-            rootedness_points: result.breakdown.ties,
-            travel_history_points: result.breakdown.travel,
-            migration_history_points: result.breakdown.migration,
-            strengths: result.strengths,
-            weaknesses: result.weaknesses,
-            recommendations: result.recommendations,
-            improvement_simulations: result.simulations
-        });
-        return {
-            testId: test.id,
-            status: 'locked',
-            message: 'Tu VisaScore está listo. Realiza el pago para desbloquear.'
-        };
+            if (testErr) {
+                console.error('❌ Supabase FULL error:', JSON.stringify(testErr, null, 2));
+                throw testErr;
+            }
+            if (!test) {
+                throw new Error('❌ Failed to create visa test');
+            }
+            console.log('🧠 Antes de scoring');
+            console.log(JSON.stringify(profile, null, 2));
+            let result;
+            try {
+                result = this.scoringService.calculate(profile);
+                console.log('✅ Score calculado');
+            }
+            catch (error) {
+                console.error('❌ Error en scoring:', error);
+                throw error;
+            }
+            const payloadToInsert = {
+                test_id: test.id,
+                has_communicable_disease: profile.hasCommunicableDisease || false,
+                has_mental_physical_disorder: profile.hasMentalPhysicalDisorder || false,
+                has_drug_addiction: profile.hasDrugAddiction || false,
+                has_criminal_record: profile.hasCriminalRecord || false,
+                has_deportation_history: profile.hasDeportationHistory || false,
+                trip_payer: profile.tripPayer || '',
+                social_media_platforms: profile.socialMediaPlatforms || '',
+                allows_social_media_check: profile.allowsSocialMediaCheck || false,
+                intended_cities: profile.intendedCities || '',
+                intended_duration_days: profile.intendedDurationDays || 0,
+                countries_visited: profile.countriesVisited || ''
+            };
+            console.log('📦 Antes de insert ds160_profiles');
+            const { error: profileErr } = await this.supabase.from('ds160_profiles').insert(payloadToInsert);
+            if (profileErr) {
+                console.error('❌ Supabase ds160_profiles insert error:', profileErr);
+                throw profileErr;
+            }
+            console.log('✅ Insert ds160_profiles OK');
+            const { error: updateErr } = await this.supabase
+                .from('visa_tests')
+                .update({
+                overall_score: result.totalScore,
+                metadata: {
+                    profile: profile,
+                    results: result,
+                    approval_probability: result.approvalProbability
+                }
+            })
+                .eq('id', test.id);
+            if (updateErr) {
+                console.error('❌ Supabase visa_tests update error:', updateErr);
+            }
+            const { error: breakdownErr } = await this.supabase.from('visa_score_breakdown').insert({
+                test_id: test.id,
+                personal_points: result.breakdown.personal,
+                economic_points: result.breakdown.economic,
+                rootedness_points: result.breakdown.ties,
+                travel_history_points: result.breakdown.travel,
+                migration_history_points: result.breakdown.migration,
+                strengths: result.strengths,
+                weaknesses: result.weaknesses,
+                recommendations: result.recommendations,
+                improvement_simulations: result.simulations
+            });
+            if (breakdownErr) {
+                console.error('❌ Supabase visa_score_breakdown error:', breakdownErr);
+            }
+            return {
+                testId: test.id,
+                status: 'locked',
+                results: result
+            };
+        }
+        catch (error) {
+            console.error('🔴 CRITICAL ERROR in submitTest:', error);
+            throw new common_1.InternalServerErrorException(error.message || 'Error processing test');
+        }
     }
     async unlockTest(testId) {
         await this.supabase
@@ -84,14 +145,7 @@ let VisaTestService = class VisaTestService {
         return data;
     }
     async getResult(testId, currentUserId) {
-        console.log('[DEBUG] getResult TEST ID:', testId);
-        console.log('[DEBUG] SUPABASE_URL:', process.env.SUPABASE_URL);
-        const { data: testDumb, error: errorDumb } = await this.supabase
-            .from('visa_tests')
-            .select('*')
-            .limit(1);
-        console.log('[DEBUG] SIMPLE QUERY RESULT:', testDumb, 'ERROR:', errorDumb);
-        const { data: test, error } = await this.supabase
+        let { data: test, error } = await this.supabase
             .from('visa_tests')
             .select('*')
             .eq('id', testId)
@@ -106,17 +160,37 @@ let VisaTestService = class VisaTestService {
         if (test.status !== 'paid') {
             throw new common_1.ForbiddenException('Resultado bloqueado. Pago requerido.');
         }
+        if (test.overall_score === null || test.overall_score === undefined) {
+            console.log(`Score missing, regenerating for testId: ${testId}`);
+            await this.generateScore(testId);
+            const { data: refreshedTest } = await this.supabase
+                .from('visa_tests')
+                .select('*')
+                .eq('id', testId)
+                .maybeSingle();
+            if (refreshedTest) {
+                test = refreshedTest;
+            }
+        }
         const { data: breakdown } = await this.supabase
             .from('visa_score_breakdown')
             .select('*')
             .eq('test_id', testId)
             .maybeSingle();
+        const breakdownTotal = breakdown
+            ? (breakdown.economic_points || 0) +
+                (breakdown.rootedness_points || 0) +
+                (breakdown.travel_history_points || 0) +
+                (breakdown.migration_history_points || 0) +
+                (breakdown.personal_points || 0)
+            : null;
+        const overallScore = test.overall_score ?? breakdownTotal;
         return {
-            overall_score: test.overall_score,
+            overall_score: overallScore,
             approval_probability: test.metadata?.approval_probability || 0,
-            category: test.overall_score > 700
+            category: overallScore > 700
                 ? 'HIGH'
-                : test.overall_score > 400
+                : overallScore > 400
                     ? 'MEDIUM'
                     : 'LOW',
             breakdown: {
@@ -131,6 +205,66 @@ let VisaTestService = class VisaTestService {
             recommendations: breakdown?.recommendations || [],
             simulations: breakdown?.improvement_simulations || []
         };
+    }
+    async generateScore(testId) {
+        console.log(`Generating score...`);
+        try {
+            const { data: profile } = await this.supabase
+                .from('ds160_profiles')
+                .select('*')
+                .eq('test_id', testId)
+                .maybeSingle();
+            if (!profile) {
+                console.log(`Score generation failed: No profile found`);
+                return;
+            }
+            const profileData = { ...profile };
+            delete profileData.id;
+            delete profileData.test_id;
+            delete profileData.created_at;
+            delete profileData.updated_at;
+            const result = this.scoringService.calculate(profileData);
+            const { data: currentTest } = await this.supabase
+                .from('visa_tests')
+                .select('metadata')
+                .eq('id', testId)
+                .maybeSingle();
+            const existingMetadata = currentTest?.metadata || {};
+            await this.supabase
+                .from('visa_tests')
+                .update({
+                overall_score: result.totalScore,
+                approval_probability: result.approvalProbability,
+                metadata: {
+                    ...existingMetadata,
+                    approval_probability: result.approvalProbability
+                }
+            })
+                .eq('id', testId);
+            const { data: existingBreakdown } = await this.supabase
+                .from('visa_score_breakdown')
+                .select('id')
+                .eq('test_id', testId)
+                .maybeSingle();
+            if (!existingBreakdown) {
+                await this.supabase.from('visa_score_breakdown').insert({
+                    test_id: testId,
+                    personal_points: result.breakdown.personal,
+                    economic_points: result.breakdown.economic,
+                    rootedness_points: result.breakdown.ties,
+                    travel_history_points: result.breakdown.travel,
+                    migration_history_points: result.breakdown.migration,
+                    strengths: result.strengths,
+                    weaknesses: result.weaknesses,
+                    recommendations: result.recommendations,
+                    improvement_simulations: result.simulations
+                });
+            }
+            console.log(`Score generated successfully`);
+        }
+        catch (err) {
+            console.log(`Score generation failed: ${err.message}`);
+        }
     }
     async sendEmail(testId, email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -782,15 +916,14 @@ let VisaTestService = class VisaTestService {
           </div>
           
           <div class="footer">
-            <div class="footer-logo-text">VISASCORE DIGITAL ASSET</div>
+            <div class="footer-logo-text">ACTIVO DIGITAL VISASCORE</div>
             <div class="footer-disclaimer">
-              This report is an automated assessment and does not guarantee visa approval.<br>
-              All data is processed securely and based on self-reported financial indicators.
+              Este reporte es una evaluación automatizada algorítmicamente y no garantiza la aprobación de la visa, ya que es potestad absoluta del Cónsula de los Estados Unidos. Lo que se define es tu perfil para obtar a la Visa Americana.<br>
+              Todos los datos son procesados de forma segura y se basan en información detallada de acuerdo a los parámetros del Formulario DS160.
             </div>
             <div class="footer-links">
-              <span>Terms of Service</span>
-              <span>Privacy Policy</span>
-              <span>Verify Authenticity</span>
+              <a href="${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://visascore.co'}/terminos-y-condiciones" style="text-decoration: none; color: inherit;"><span>Términos y Condiciones</span></a>
+              <a href="${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'https://visascore.co'}/politica-de-privacidad" style="text-decoration: none; color: inherit;"><span>Política de Privacidad</span></a>
             </div>
           </div>
           
@@ -807,9 +940,9 @@ let VisaTestService = class VisaTestService {
                 throw new Error("Chromium executable path not found");
             }
             const browser = await puppeteer_core_1.default.launch({
-                args: chromium_1.default.args,
-                executablePath: execPath,
-                headless: true
+                executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                headless: true,
+                args: ["--no-sandbox", "--disable-setuid-sandbox"],
             });
             console.log("Browser launched successfully");
             const page = await browser.newPage();

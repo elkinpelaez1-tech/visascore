@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { MailService } from '../mail/mail.service';
 import { ReportsService } from '../reports/reports.service';
 import { VisaTestService } from '../visa-test/visa-test.service';
+import { ScoringService } from '../scoring/scoring.service';
 import * as crypto from 'crypto-js';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class PaymentsService {
   constructor(
     private mailService: MailService,
     private reportsService: ReportsService,
-    private visaTestService: VisaTestService
+    private visaTestService: VisaTestService,
+    private scoringService: ScoringService
   ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -36,18 +38,58 @@ export class PaymentsService {
       throw new Error('❌ test_id does not exist');
     }
 
-    const publicKey = process.env.WOMPI_PUBLIC_KEY;
-    const frontendUrl = process.env.FRONTEND_URL || "https://visascore.info";
-    const redirectUrl = encodeURIComponent(`${frontendUrl}/gracias?testId=${testId}`);
+    const cleanTestId = (testId || "").toString().trim();
+    console.log('🧾 testId en payment:', cleanTestId);
+    
+    if (!cleanTestId || cleanTestId === "undefined") {
+      this.logger.error(`❌ Intento de crear pago con testId inválido: ${cleanTestId}`);
+      throw new Error('testId inválido');
+    }
 
-    // Wompi /p/ acepta reference dinámico.
-    // Los links /l/ pre-configurados ignoran el parámetro reference.
-    const paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=5000000&reference=${testId}&redirect-url=${redirectUrl}`;
+    const publicKey = (process.env.WOMPI_PUBLIC_KEY || "").trim();
+    // Dinámico: usa FRONTEND_URL si existe, sino producción
+    const frontendUrl = (process.env.FRONTEND_URL || "https://visascore.info").trim();
+    
+    // Redirect URL con testId explícito
+    const redirectUrl = `${frontendUrl}/gracias?testId=${cleanTestId}`;
+    console.log("🔁 Redirect final:", redirectUrl);
+    
+    const encodedRedirectUrl = encodeURIComponent(redirectUrl);
 
-    this.logger.log(`💳 createPayment → publicKey present: ${!!publicKey}, testId: ${testId}`);
-    this.logger.log(`💳 paymentUrl: ${paymentUrl}`);
+    const integritySecret = (process.env.WOMPI_INTEGRITY_SECRET || "").trim();
+    const amountInCents = "5000000";
+    const currency = "COP";
 
-    return { paymentUrl };
+    // Hash de integridad: reference + amount + currency + secret
+    const rawIntegrity = `${cleanTestId}${amountInCents}${currency}${integritySecret}`;
+    const integrityHash = crypto.SHA256(rawIntegrity).toString();
+
+    // Formación estricta de la URL con firma de integridad obligatoria
+    const paymentUrl = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${cleanTestId}&redirect_url=${encodedRedirectUrl}&redirect-url=${encodedRedirectUrl}&signature:integrity=${integrityHash}`;
+
+    this.logger.log(`💳 createPayment → publicKey present: ${!!publicKey}, testId: ${cleanTestId}`);
+    this.logger.log(`🔗 Wompi checkout URL: ${paymentUrl}`);
+
+    // 🔥 PHASE 2: Crear registro PENDING en DB antes de ir a Wompi
+    try {
+      const { error: paymentError } = await this.supabase
+        .from('payments')
+        .insert({
+          test_id: cleanTestId,
+          amount: 50000, // 50.000 COP
+          status: 'PENDING'
+        });
+      
+      if (paymentError) {
+        this.logger.error('❌ Error creando registro de pago PENDING:', paymentError.message);
+      } else {
+        this.logger.log(`✅ Registro de pago PENDING creado para testId: ${cleanTestId}`);
+      }
+    } catch (err) {
+      this.logger.error('❌ Error excepcional creando pago PENDING:', err);
+    }
+
+    return { checkoutUrl: paymentUrl };
   }
 
   // =============================
@@ -93,12 +135,53 @@ export class PaymentsService {
       console.log('🧾 resultado update:', updateData);
       console.log('❌ error update:', error);
 
-      // Registrar transacción en tabla payments para que Phase 1 (resolve) funcione
-      await this.supabase.from('payments').upsert({
-        wompi_transaction_id: transaction?.id,
-        test_id: testId,
-        status: transaction?.status || 'APPROVED'
-      }, { onConflict: 'wompi_transaction_id' });
+      // NUEVO: Garantizar que todo test 'paid' tenga overall_score
+      try {
+        const { data: visaTest } = await this.supabase
+          .from('visa_tests')
+          .select('id, overall_score')
+          .eq('id', testId)
+          .single();
+
+        if (visaTest && !visaTest.overall_score) {
+          console.log(`⚠️ Webhook detectó test ${testId} "paid" SIN overall_score. Recalculando...`);
+          
+          const { data: profile } = await this.supabase
+            .from('ds160_profiles')
+            .select('*')
+            .eq('test_id', testId)
+            .single();
+
+          if (profile) {
+            const score = this.scoringService.calculate(profile);
+            await this.supabase
+              .from('visa_tests')
+              .update({ overall_score: score.totalScore })
+              .eq('id', testId);
+            console.log(`✅ overall_score recalculado y guardado desde el webhook: ${score.totalScore}`);
+          }
+        }
+      } catch (scoreCheckErr) {
+        console.error('❌ Error forzando cálculo de overall_score en el webhook:', scoreCheckErr);
+      }
+
+      // 🔥 PHASE 3: Registrar transacción en tabla payments con datos completos
+      const { error: paymentUpsertError } = await this.supabase
+        .from('payments')
+        .update({
+          wompi_transaction_id: wompiTxId,
+          status: status,         // Insertar el status real devuelto por Wompi
+          amount: transaction?.amount_in_cents ? transaction.amount_in_cents / 100 : null,
+          payment_method: transaction?.payment_method_type || null,
+          raw_webhook_data: body  // 🔥 Guardamos el log completo para auditoría
+        })
+        .eq('test_id', testId);
+
+      if (paymentUpsertError) {
+        console.error('❌ Error guardando datos en tabla payments:', paymentUpsertError.message);
+      } else {
+        console.log(`✅ Tabla payments actualizada exitosamente para testId: ${testId}`);
+      }
 
       await this.visaTestService.generateScore(testId);
 
@@ -270,11 +353,10 @@ export class PaymentsService {
           this.logger.log(`✅ Test ${finalTestId} marcado como paid via wompiId ${wompiId}`);
           
           // Guardar explícitamente el pago en BD si no estaba antes, garantizando la persistencia
-          await this.supabase.from('payments').upsert({
+          await this.supabase.from('payments').update({
             wompi_transaction_id: wompiId,
-            test_id: finalTestId,
             status: 'APPROVED'
-          }, { onConflict: 'wompi_transaction_id' });
+          }).eq('test_id', finalTestId);
 
           // Disparar generación de score en background (no bloquea la respuesta)
           this.visaTestService.generateScore(finalTestId).catch(err =>
