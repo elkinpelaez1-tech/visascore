@@ -20,7 +20,7 @@ function PaywallContent() {
     setIsLoading(true);
     try {
       if (testId) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/create`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/payments/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ testId }),

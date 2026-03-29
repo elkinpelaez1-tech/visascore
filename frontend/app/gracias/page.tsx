@@ -135,7 +135,7 @@ function GraciasContent() {
       return;
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/resolve`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/payments/resolve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wompiId, testId: queryTestId }), // Se envía testId para fallback si no hay reference
@@ -172,7 +172,7 @@ function GraciasContent() {
 
       attempts++;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${testId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/visa-test/result/${testId}`);
 
         // 403 = pago aún no confirmado en BD. Seguir esperando.
         if (res.status === 403) {
@@ -210,7 +210,7 @@ function GraciasContent() {
 
     setDownloading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/report/${testId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/visa-test/report/${testId}`);
       if (!res.ok) throw new Error("No se pudo descargar el reporte");
 
       const blob = await res.blob();
@@ -244,7 +244,7 @@ function GraciasContent() {
     setEmailStatus("loading");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/send-email`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/visa-test/send-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

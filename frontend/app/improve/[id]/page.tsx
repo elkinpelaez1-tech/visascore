@@ -50,7 +50,7 @@ export default function ImprovePage() {
 
     const fetchResult = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visa-test/result/${id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000"}/visa-test/result/${id}`);
         if (!res.ok) {
           throw new Error("No se pudo cargar el análisis");
         }
