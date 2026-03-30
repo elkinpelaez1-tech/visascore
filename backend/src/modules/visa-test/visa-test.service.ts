@@ -1001,10 +1001,9 @@ export class VisaTestService {
       }
 
       const browser = await puppeteer.launch({
-        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      });
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  headless: 'new',
+});
       
       console.log("Browser launched successfully");
       const page = await browser.newPage();
