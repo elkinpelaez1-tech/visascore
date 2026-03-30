@@ -995,9 +995,12 @@ export class VisaTestService {
 
       const execPath = await chromium.executablePath();
 
+      if (!execPath) {
+        throw new Error("Chromium executablePath not found");
+      }
+
       const browser = await puppeteer.launch({
         args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
-        defaultViewport: chromium.defaultViewport,
         executablePath: execPath,
         headless: true,
       });
