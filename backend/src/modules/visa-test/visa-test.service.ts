@@ -1002,7 +1002,7 @@ export class VisaTestService {
 
       const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  headless: 'new',
+  headless: 'true'
 });
       
       console.log("Browser launched successfully");
