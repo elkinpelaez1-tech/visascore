@@ -23,7 +23,7 @@ export default function LandingPage() {
           <Link className="text-sm font-semibold text-gray-600 hover:text-[#002868] transition-colors hidden md:block" href="#how-it-works">
             Cómo funciona
           </Link>
-          <Link className="text-sm font-semibold bg-[#002868] text-white px-6 py-2.5 rounded-xl hover:bg-[#001f4d] hover:shadow-lg transition-all flex items-center gap-2" href="/test">
+          <Link className="text-sm font-semibold bg-[#002868] text-white px-6 py-2.5 rounded-xl hover:bg-[#001f4d] hover:shadow-lg transition-all flex items-center gap-2" href="/test" onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}>
             <span className="hidden sm:inline">Calcular mi Score</span>
             <span className="sm:hidden">Empezar</span> <ArrowRight size={16} />
           </Link>
@@ -45,7 +45,7 @@ export default function LandingPage() {
                 Analizamos tu perfil migratorio y te mostramos tu probabilidad real de aprobación basándonos en los criterios consulares actuales.
               </p>
               
-              <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-[#002868] px-10 text-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-[#001f4d] transition-all mb-8">
+              <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-[#002868] px-10 text-lg font-semibold text-white shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-[#001f4d] transition-all mb-8" onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}>
                 Calcular mi VisaScore
               </Link>
               
@@ -188,7 +188,7 @@ export default function LandingPage() {
             <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
               No dejes tu aplicación al azar. Conoce exactamente cómo te ve el cónsul y aplica con seguridad.
             </p>
-            <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-[#002868] shadow-xl hover:bg-gray-50 hover:scale-105 transition-all">
+            <Link href="/test" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-[#002868] shadow-xl hover:bg-gray-50 hover:scale-105 transition-all" onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}>
               Comenzar evaluación gratuita
             </Link>
           </div>

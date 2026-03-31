@@ -196,6 +196,14 @@ function GraciasContent() {
           setResult(data);
           setLoading(false);
           clearInterval(intervalId);
+          
+          if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+            (window as any).gtag('event', 'purchase', {
+              value: 50000,
+              currency: 'COP',
+              transaction_id: testId
+            });
+          }
         }
       } catch (err) {
         console.error("Error al obtener resultado:", err);
@@ -207,6 +215,10 @@ function GraciasContent() {
 
   const handleDownloadReport = async () => {
     if (!testId) return;
+
+    if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'pdf_download');
+    }
 
     setDownloading(true);
     try {

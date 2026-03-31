@@ -15,6 +15,9 @@ function PaywallContent() {
 
   useEffect(() => {
     console.log('[Analytics] paywall_viewed', { testId });
+    if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'begin_checkout');
+    }
   }, [testId]);
   const handlePayment = async () => {
     setIsLoading(true);
