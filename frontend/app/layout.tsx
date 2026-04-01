@@ -37,15 +37,17 @@ export default function RootLayout({
       <body className={`${inter.variable} ${outfit.variable} antialiased bg-slate-50 text-slate-900`}>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-FJX2BMQZ7F"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
-            gtag('config', 'G-FJX2BMQZ7F');
+            gtag('config', 'G-FJX2BMQZ7F', {
+              page_path: window.location.pathname,
+            });
           `}
         </Script>
         {children}
