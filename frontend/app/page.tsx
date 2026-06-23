@@ -84,7 +84,7 @@ export default function LandingPage() {
               <Shield className="w-3.5 h-3.5" /> Acceso Asesores
             </button>
             <Link
-              href="/test"
+              href="/tramite-visa"
               className="text-xs md:text-sm font-bold bg-[#002868] hover:bg-blue-900 text-white px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
               onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
             >
@@ -123,7 +123,7 @@ export default function LandingPage() {
                 {/* CTAs */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                   <Link
-                    href="/test"
+                    href="/tramite-visa"
                     className="inline-flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-red-800 text-white font-extrabold tracking-wide uppercase px-8 py-4 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all active:scale-95 text-sm"
                     onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
                   >
@@ -310,7 +310,7 @@ export default function LandingPage() {
                 Nosotros te ayudamos a preparar correctamente tu caso para asegurar una postulación impecable.
               </p>
               <Link
-                href="/test"
+                href="/tramite-visa"
                 className="inline-flex items-center gap-2 bg-[#002868] hover:bg-blue-900 text-white font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full shadow-lg whitespace-nowrap hover:-translate-y-0.5 transition-all"
                 onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
               >

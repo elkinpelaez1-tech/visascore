@@ -27,3 +27,44 @@ h1, h2, h3, h4, .font-heading {
 .text-usa-blue { color: var(--primary-blue); }
 .bg-usa-red { background-color: var(--primary-red); }
 .text-usa-red { color: var(--primary-red); }
+
+@theme {
+  --color-us-blue: #3C3B6E;
+  --color-us-red: #B22234;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  border-radius: 9999px;
+}
+
+.cta-button:hover {
+  transform: scale(1.05);
+}
+
+.cta-button:active {
+  transform: scale(0.95);
+}
+
+.cta-primary {
+  background-color: #B22234;
+}
+.cta-primary:hover {
+  background-color: #901a27;
+}
+
+.cta-secondary {
+  background-color: #3C3B6E;
+}
+.cta-secondary:hover {
+  background-color: #2b2a52;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(60, 59, 110, 0.1);
+}
