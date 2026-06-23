@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ShieldCheck, BarChart3, Zap, ArrowRight, CheckCircle2, Users, FileText,
-  User, Clock, Award
+  User, Clock, Award, Shield, TrendingUp, AlertTriangle, Sparkles
 } from "lucide-react";
 import LegalNotice from "./components/LegalNotice";
 import LegalModal from "../components/ui/LegalModal";
@@ -49,87 +49,210 @@ export default function LandingPage() {
     }
   };
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════════════
-          HEADER — sin cambios respecto al original
+          HEADER — diseño AI Studio aprobado (fixed, 3 items)
       ═══════════════════════════════════════════════════════ */}
-      <header className="px-4 lg:px-8 h-20 flex items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center">
-          <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="focus:outline-none transition-transform hover:scale-105">
             <img
               src="/VisaScore Transparente.png"
               alt="VisaScore Logo"
-              className="h-10 md:h-12 w-auto object-contain"
+              className="h-8 md:h-10 w-auto object-contain"
             />
           </Link>
-        </div>
-        <nav className="flex items-center gap-4 md:gap-8">
-          <Link className="text-sm font-bold text-gray-600 hover:text-[#002868] transition-colors hidden sm:block" href="/quienes-somos">
-            Quiénes Somos
-          </Link>
-          <Link
-            className="text-sm font-bold bg-[#FF9900] text-white px-6 py-3 rounded-full hover:bg-[#E68A00] hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center gap-2"
-            href="/test"
-            onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
-          >
-            Calcular mi Score <ArrowRight size={16} />
-          </Link>
-        </nav>
-      </header>
 
-      <main className="flex-1">
+          <div className="flex items-center gap-4 md:gap-6 text-sm">
+            <button
+              onClick={() => scrollToSection('visascore-tools')}
+              className="hidden md:block font-bold text-slate-600 hover:text-[#002868] transition-colors"
+            >
+              Calcular VisaScore
+            </button>
+            <button
+              onClick={() => scrollToSection('para-asesores')}
+              className="hidden sm:inline-flex items-center gap-1.5 font-bold text-[#CC0000] bg-red-50 hover:bg-rose-100 border border-red-200 px-4 py-2 rounded-full transition-all text-xs"
+            >
+              <Shield className="w-3.5 h-3.5" /> Acceso Asesores
+            </button>
+            <Link
+              href="/test"
+              className="text-xs md:text-sm font-bold bg-[#002868] hover:bg-blue-900 text-white px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+              onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
+            >
+              Iniciar Trámite
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <main className="flex-1 pt-16">
 
         {/* ═══════════════════════════════════════════════════════
-            BLOQUE 1 — HERO — sin cambios respecto al original
+            BLOQUE 1 — HERO — diseño AI Studio aprobado (2 columnas)
         ═══════════════════════════════════════════════════════ */}
-        <section className="w-full py-16 md:py-28 relative overflow-hidden bg-white">
-          <div className="container mx-auto px-4 md:px-6 relative z-10">
-            <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#002868] text-xs md:text-sm font-bold mb-8">
-                <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
-                ANÁLISIS DE PERFIL BASADO EN CRITERIOS CONSULARES
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-8 tracking-tight">
-                ¿Vas a arriesgar más de <span className="text-[#CC0000]">$800.000 COP</span> sin saber si te aprobarán la visa?
-              </h1>
-              <div className="text-lg md:text-2xl text-gray-600 mb-12 max-w-2xl font-medium leading-relaxed">
-                <p className="mb-4 text-gray-500 text-base md:text-lg">Antes de pagar:</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left md:text-center text-gray-700 font-bold mb-8">
-                  <div className="flex items-center md:justify-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <span className="text-red-500">•</span> $185 USD derechos
-                  </div>
-                  <div className="flex items-center md:justify-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <span className="text-red-500">•</span> $300.000 trámite
-                  </div>
-                  <div className="flex items-center md:justify-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <span className="text-red-500">•</span> Tiempo y tiquetes
-                  </div>
-                </div>
-                <p className="text-gray-900 font-bold bg-yellow-100 px-4 py-2 inline-block rounded-lg mt-4">
-                  Descubre tu probabilidad real por solo $50.000 COP
+        <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28 border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+              {/* ── Columna izquierda ── */}
+              <div>
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-xs font-bold tracking-widest text-[#002868] uppercase bg-blue-50 rounded-full border border-blue-100 shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-[#CC0000]" /> Acompañamiento Profesional Premium
+                </span>
+
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-slate-900 tracking-tight">
+                  Tramitamos tu Visa Americana de forma{' '}
+                  <span className="text-[#002868]">profesional.</span>
+                </h1>
+
+                <p className="text-base md:text-lg text-slate-600 mb-8 leading-relaxed">
+                  Evita errores que pueden costarte más de{' '}
+                  <span className="font-extrabold text-[#CC0000]">$800.000 COP</span>{' '}
+                  entre derechos consulares, formularios defectuosos, desplazamientos en vano y tiempo perdido. Te acompañamos desde el inicio hasta la entrevista.
                 </p>
+
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                  <Link
+                    href="/test"
+                    className="inline-flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-red-800 text-white font-extrabold tracking-wide uppercase px-8 py-4 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all active:scale-95 text-sm"
+                    onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
+                  >
+                    INICIAR MI TRÁMITE DE VISA AHORA
+                  </Link>
+                  <button
+                    onClick={() => scrollToSection('visascore-tools')}
+                    className="inline-flex items-center justify-center gap-2 bg-[#002868] hover:bg-blue-900 text-white font-bold tracking-wide uppercase px-8 py-4 rounded-full border-2 border-transparent hover:border-slate-300 transition-all active:scale-95 text-sm"
+                  >
+                    CALCULAR MI VISASCORE
+                  </button>
+                </div>
+
+                {/* Trust badges */}
+                <div className="flex flex-wrap items-center gap-6 text-slate-500 text-sm">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <ShieldCheck className="w-5 h-5 text-green-500" /> Formulario Oficial DS-160
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Award className="w-5 h-5 text-[#CC0000]" /> 85% de efectividad
+                  </span>
+                </div>
               </div>
 
-              <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
-                <Link
-                  href="/test"
-                  className="inline-flex w-full sm:w-auto h-16 items-center justify-center rounded-2xl bg-[#FF9900] px-12 text-xl font-black text-white shadow-[0_10px_30px_-10px_rgba(255,153,0,0.5)] hover:shadow-[0_20px_40px_-10px_rgba(255,153,0,0.6)] hover:-translate-y-1 hover:bg-[#E68A00] transition-all active:scale-95"
-                  onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
-                >
-                  Calcular mi VisaScore ahora →
-                </Link>
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-center text-sm font-bold text-gray-500 mt-2">
-                  <span className="text-green-600">✔ Resultado inmediato</span>
-                  <span className="text-blue-600">✔ Criterios reales del cónsul</span>
-                  <span className="text-purple-600">✔ +500 perfiles evaluados</span>
+              {/* ── Columna derecha: tarjeta de servicio ── */}
+              <div className="w-full flex justify-center lg:justify-end">
+                <div className="relative w-full max-w-xl bg-white border border-slate-200/80 shadow-2xl rounded-[2.25rem] p-6 md:p-7 overflow-hidden">
+
+                  {/* Header de la tarjeta */}
+                  <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-50 p-2.5 rounded-full text-[#002868] flex items-center justify-center w-11 h-11 flex-shrink-0">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Estado del servicio</p>
+                        <h4 className="text-[15px] font-black text-slate-900 mt-1">Asesoría Disponible Co/USA</h4>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase text-emerald-800 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Disponible
+                    </span>
+                  </div>
+
+                  {/* Precios */}
+                  <div className="grid grid-cols-2 rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                    <div className="bg-[#CC0000] p-4 flex flex-col justify-center text-white">
+                      <span className="text-[10px] font-bold text-red-100 uppercase tracking-wide">Valor del trámite</span>
+                      <span className="text-xl md:text-2xl font-black mt-1">$250.000 <span className="text-xs font-bold text-red-100">COP</span></span>
+                    </div>
+                    <div className="bg-slate-50 p-4 border-l border-slate-200 flex flex-col justify-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">+ Derechos consulares</span>
+                      <span className="text-xl md:text-2xl font-black text-slate-800 mt-0.5">USD 185</span>
+                      <span className="text-[9px] font-bold text-slate-400">Pagados a la Embajada</span>
+                    </div>
+                  </div>
+
+                  {/* Métricas */}
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    <div className="bg-white border border-slate-150 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[130px] shadow-sm">
+                      <div className="w-9 h-9 bg-rose-50 text-[#CC0000] rounded-full flex items-center justify-center flex-shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-900 mt-2.5 leading-snug">Menos de 24 horas</span>
+                      <span className="text-[9px] font-bold text-slate-400 leading-tight block mt-1">Tiempo de diligenciamiento</span>
+                    </div>
+                    <div className="bg-white border border-slate-150 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[130px] shadow-sm">
+                      <div className="w-9 h-9 bg-blue-50 text-[#002868] rounded-full flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-extrabold text-emerald-600 mt-2.5 leading-snug">DS-160 incluido</span>
+                      <span className="text-[9px] font-bold text-slate-400 leading-tight block mt-1">Simulación integrada al formulario</span>
+                    </div>
+                    <div className="bg-white border border-slate-150 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[130px] shadow-sm">
+                      <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-900 mt-2.5 leading-snug">Acompañamiento total</span>
+                      <span className="text-[9px] font-bold text-slate-400 leading-tight block mt-1">Desde el inicio hasta tu entrevista</span>
+                    </div>
+                  </div>
+
+                  {/* Indicador de confianza */}
+                  <div className="border border-dashed border-blue-200 bg-blue-50/25 p-4 rounded-2xl mb-5 flex items-center gap-4">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#002868]">
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-2xl font-black text-[#002868] block leading-none">85%</span>
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block mt-0.5">casos exitosos</span>
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="flex-grow">
+                      <p className="text-[10px] font-bold text-slate-500 leading-snug">
+                        Basado en cientos de casos gestionados exitosamente.
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                          <img className="inline-block h-5 w-5 rounded-full ring-2 ring-white object-cover" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&fit=crop" alt="Persona 1" referrerPolicy="no-referrer" />
+                          <img className="inline-block h-5 w-5 rounded-full ring-2 ring-white object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&fit=crop" alt="Persona 2" referrerPolicy="no-referrer" />
+                          <img className="inline-block h-5 w-5 rounded-full ring-2 ring-white object-cover" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&fit=crop" alt="Persona 3" referrerPolicy="no-referrer" />
+                          <div className="inline-flex items-center justify-center h-5 w-5 rounded-full ring-2 ring-white bg-[#002868] text-[8px] font-black text-white">+126</div>
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-500">Personas ya confían en nosotros</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aviso importante */}
+                  <div className="bg-red-50/50 p-4 rounded-xl border border-red-100 flex items-start gap-3">
+                    <div className="bg-red-100 p-1 rounded-lg text-[#CC0000] flex-shrink-0 mt-0.5">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-normal font-medium">
+                      <strong className="text-[#CC0000] font-bold">Aviso importante:</strong> La tarifa oficial consular aumentó a USD 185. Prepararte correctamente es indispensable para no perder tu inversión.
+                    </p>
+                  </div>
+
                 </div>
               </div>
             </div>
           </div>
-          <div className="absolute top-1/4 right-0 -mr-40 w-96 h-96 bg-blue-100/50 rounded-full blur-3xl -z-10" />
-          <div className="absolute bottom-1/4 left-0 -ml-40 w-96 h-96 bg-red-100/50 rounded-full blur-3xl -z-10" />
+
+          {/* Fondos decorativos */}
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[500px] h-[500px] bg-[#002868]/5 rounded-full blur-3xl -z-10" />
+          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[400px] h-[400px] bg-[#CC0000]/5 rounded-full blur-3xl -z-10" />
         </section>
 
         {/* ═══════════════════════════════════════════════════════
@@ -575,7 +698,7 @@ export default function LandingPage() {
         {/* ═══════════════════════════════════════════════════════
             NUEVO — PARA ASESORES (solo informativo, sin link al dashboard)
         ═══════════════════════════════════════════════════════ */}
-        <section className="w-full py-24 bg-white border-b border-gray-100">
+        <section id="para-asesores" className="w-full py-24 bg-white border-b border-gray-100">
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
