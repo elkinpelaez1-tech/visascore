@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Search, Shield, CheckSquare, Square, Save, Eye, ClipboardList, 
   User, Calendar, FileText, Phone, Mail, MapPin, Briefcase, GraduationCap, 
-  Tag, Info, CheckCircle2, AlertCircle, RefreshCw, X, Globe
+  Tag, Info, CheckCircle2, AlertCircle, RefreshCw, X, Globe, Users
 } from 'lucide-react';
 import { VisaExpediente, DS160Info, ProcessChecklist, VisaApplicationState } from '../types';
 import { getExpedientes, updateExpediente, deleteExpediente, resetExpedientes } from '../../services/visaService';
@@ -479,9 +479,20 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                         <p><span className="text-slate-400 block font-bold">Género:</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.gender}</span></p>
                         <p><span className="text-slate-400 block font-bold">Lugar de Nacimiento:</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.birthPlace}</span></p>
                         <p><span className="text-slate-400 block font-bold">Nacionalidad:</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.nationality}</span></p>
-                        <p><span className="text-slate-400 block font-bold">Dirección Residencial:</span> <span className="text-white font-semibold">{activeExpediente.state.addressContact.residenceAddress}</span></p>
-                        <p><span className="text-slate-400 block font-bold">Pasaporte N°:</span> <span className="text-white font-semibold">{activeExpediente.state.passportData.passportNumber}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Documento Identidad (Tipo / N°):</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.nationalIdentityType || 'Cédula de Ciudadanía'} - {activeExpediente.state.personalData.nationalIdentityNumber}</span></p>
+                        <p><span className="text-slate-400 block font-bold">¿Otra Nacionalidad?:</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.hasOtherNationality} {activeExpediente.state.personalData.hasOtherNationality === 'Si' ? `(${activeExpediente.state.personalData.otherNationalityDetails})` : ''}</span></p>
+                        <p><span className="text-slate-400 block font-bold">¿Residente otro país?:</span> <span className="text-white font-semibold">{activeExpediente.state.personalData.isResidentOtherCountry || 'No'}</span></p>
+                        
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">Dirección Residencial:</span> <span className="text-white font-semibold">{activeExpediente.state.addressContact.residenceAddress}, {activeExpediente.state.addressContact.residenceCity}, {activeExpediente.state.addressContact.residenceState}, {activeExpediente.state.addressContact.residenceCountry}</span></p>
+                        
+                        <p><span className="text-slate-400 block font-bold">Teléfonos:</span> <span className="text-white font-semibold">Móvil: {activeExpediente.state.addressContact.mobilePhone} {activeExpediente.state.addressContact.secondaryPhone ? ` / Secundario: ${activeExpediente.state.addressContact.secondaryPhone}` : ''}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Correos:</span> <span className="text-white font-semibold">Principal: {activeExpediente.state.addressContact.email} {activeExpediente.state.addressContact.hasOtherEmail === 'Si' ? ` / Alterno: ${activeExpediente.state.addressContact.otherEmail}` : ''}</span></p>
+                        <p className="md:col-span-2"><span className="text-slate-400 block font-bold">Redes Sociales (5 años):</span> <span className="text-white font-semibold break-all">{activeExpediente.state.addressContact.hasSocialMedia === 'Si' ? activeExpediente.state.addressContact.socialMediaLink : 'No registra'}</span></p>
+                        
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">Pasaporte N°:</span> <span className="text-white font-semibold">{activeExpediente.state.passportData.passportNumber} ({activeExpediente.state.passportData.passportType || 'Regular'})</span></p>
                         <p><span className="text-slate-400 block font-bold">Expedición / Vence:</span> <span className="text-white font-semibold">{activeExpediente.state.passportData.expeditionDate} / {activeExpediente.state.passportData.expirationDate}</span></p>
+                        <p><span className="text-slate-400 block font-bold">País Emisor:</span> <span className="text-white font-semibold">{activeExpediente.state.passportData.issuingCountry || 'Colombia'}</span></p>
+                        <p className="md:col-span-2"><span className="text-slate-400 block font-bold">Pasaporte Robado/Extraviado:</span> <span className="text-white font-semibold">{activeExpediente.state.passportData.hasLostPassport === 'Si' ? `Sí - Explicación: ${activeExpediente.state.passportData.lostPassportExplanation}` : 'No'}</span></p>
                       </div>
                     </div>
 
@@ -492,20 +503,58 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                         <span className="text-xs font-black uppercase tracking-wider">Viaje e Información de Estadía</span>
                       </div>
                       <div className="grid md:grid-cols-2 gap-4 text-xs">
-                        <p><span className="text-slate-400 block font-bold">Fecha de Viaje Prevista:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.tentativeTravelDate || 'Ninguna'}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Fecha de Viaje Prevista / Duración:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.tentativeTravelDate || 'Ninguna'} {activeExpediente.state.travelInfo.travelDurationDays ? `(${activeExpediente.state.travelInfo.travelDurationDays} días)` : ''}</span></p>
                         <p><span className="text-slate-400 block font-bold">Propósito del viaje:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.travelPurpose}</span></p>
                         <p><span className="text-slate-400 block font-bold">¿Quién costea el viaje?:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.travelPayer}</span></p>
                         {activeExpediente.state.travelInfo.travelPayer !== 'Mismo solicitante' && (
                           <p><span className="text-slate-400 block font-bold">Nombre del Patrocinador:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.payerFirstName} {activeExpediente.state.travelInfo.payerLastName} ({activeExpediente.state.travelInfo.payerRelationship})</span></p>
                         )}
-                        <p><span className="text-slate-400 block font-bold">¿Tiene Contacto en USA?:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.hasContact}</span></p>
+                        <p><span className="text-slate-400 block font-bold">¿Planes de viaje específicos?:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.hasSpecificTravelPlans || 'No'}</span></p>
+                        {activeExpediente.state.travelInfo.hasSpecificTravelPlans === 'Si' && (
+                          <>
+                            <p><span className="text-slate-400 block font-bold">Fecha Llegada a EE.UU.:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.arrivalDate}</span></p>
+                            <p><span className="text-slate-400 block font-bold">Fecha Salida de EE.UU.:</span> <span className="text-white font-semibold">{activeExpediente.state.travelInfo.departureDate}</span></p>
+                          </>
+                        )}
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">¿Tiene Contacto en USA?:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.hasContact}</span></p>
                         <p><span className="text-slate-400 block font-bold">Detalle de Hospedaje / Contacto en USA:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.name} ({activeExpediente.state.usContact.relationship || 'Hospedaje'})</span></p>
-                        <p><span className="text-slate-400 block font-bold">Dirección en USA:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.address}</span></p>
-                        <p><span className="text-slate-400 block font-bold">Teléfono Hospedaje / Contacto:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.phone}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Organización / Empresa:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.organizationName || 'N/A'}</span></p>
+                        <p className="md:col-span-2"><span className="text-slate-400 block font-bold">Dirección en USA:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.address}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Teléfono Hospedaje / Contacto:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.phone || activeExpediente.state.travelInfo.accommodationPhone || 'N/A'}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Correo Hospedaje / Contacto:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.email || activeExpediente.state.travelInfo.accommodationEmail || 'N/A'}</span></p>
+                        <p><span className="text-slate-400 block font-bold">Estado Legal del Contacto:</span> <span className="text-white font-semibold">{activeExpediente.state.usContact.legalStatus || 'N/A'}</span></p>
                       </div>
                     </div>
 
-                    {/* C. Cónyuge e Hijos */}
+                    {/* C. Información Familiar */}
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
+                      <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
+                        <Users className="w-4 h-4" />
+                        <span className="text-xs font-black uppercase tracking-wider">Información de Padres y Parientes</span>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4 text-xs">
+                        <div className="space-y-1">
+                          <span className="font-bold text-[#2c7df7] block uppercase text-[10px]">Información del Padre:</span>
+                          <p><span className="text-slate-400 font-bold">Nombre Completo:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.fatherName || 'N/A'}</span></p>
+                          <p><span className="text-slate-400 font-bold">Fecha Nacimiento:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.fatherBirthDate || 'N/A'}</span></p>
+                          <p><span className="text-slate-400 font-bold">¿Está en EE.UU.?:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.isFatherInUS || 'No'} {activeExpediente.state.familyInfo.isFatherInUS === 'Si' ? `(${activeExpediente.state.familyInfo.fatherUSStatus})` : ''}</span></p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="font-bold text-[#2c7df7] block uppercase text-[10px]">Información de la Madre:</span>
+                          <p><span className="text-slate-400 font-bold">Nombre Completo:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.motherName || 'N/A'}</span></p>
+                          <p><span className="text-slate-400 font-bold">Fecha Nacimiento:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.motherBirthDate || 'N/A'}</span></p>
+                          <p><span className="text-slate-400 font-bold">¿Está en EE.UU.?:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.isMotherInUS || 'No'} {activeExpediente.state.familyInfo.isMotherInUS === 'Si' ? `(${activeExpediente.state.familyInfo.motherUSStatus})` : ''}</span></p>
+                        </div>
+                        <div className="md:col-span-2 border-t border-slate-900 pt-2">
+                          <p><span className="text-slate-400 font-bold">¿Tiene otros familiares en EE.UU.?:</span> <span className="text-white font-semibold">{activeExpediente.state.familyInfo.hasOtherRelativesInUS || 'No'}</span></p>
+                          {activeExpediente.state.familyInfo.hasOtherRelativesInUS === 'Si' && (
+                            <p className="mt-1"><span className="text-slate-400 font-bold">Detalle familiares:</span> <span className="text-white font-medium">{activeExpediente.state.familyInfo.otherRelativesDetails}</span></p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* D. Cónyuge e Hijos */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
                       <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
                         <Tag className="w-4 h-4" />
@@ -534,11 +583,11 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                       </div>
                     </div>
 
-                    {/* D. Situación Laboral */}
+                    {/* E. Situación Laboral */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
                       <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
                         <Briefcase className="w-4 h-4" />
-                        <span className="text-xs font-black uppercase tracking-wider">Historial y Situación Laboral Activa</span>
+                        <span className="text-xs font-black uppercase tracking-wider">Historial y Situación Laboral</span>
                       </div>
                       
                       <div className="text-xs gap-4 mb-2">
@@ -565,13 +614,34 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                           )}
                         </div>
                       ) : (
-                        <div className="bg-blue-950/20 text-blue-350 border border-blue-900/30 p-3 rounded-lg text-xs mt-2 font-bold select-none">
+                        <div className="bg-blue-950/20 text-blue-350 border border-blue-900/30 p-3 rounded-lg text-xs mt-2 font-bold select-none mb-3">
                           Individuo jubilado legalmente. No registra relación de empleo activo obligatoria.
                         </div>
                       )}
+
+                      {/* Empleos Anteriores */}
+                      <div className="border-t border-slate-900 pt-3 mt-3 text-xs">
+                        <p className="mb-2"><span className="font-bold text-slate-400">¿Posee empleos anteriores (últimos 5 años)?:</span> <span className="text-white font-bold">{activeExpediente.state.previousJobs?.hasPreviousJobs || 'No'}</span></p>
+                        
+                        {activeExpediente.state.previousJobs?.hasPreviousJobs === 'Si' && activeExpediente.state.previousJobs.jobs && activeExpediente.state.previousJobs.jobs.length > 0 && (
+                          <div className="space-y-3 mt-2">
+                            {activeExpediente.state.previousJobs.jobs.map((job, idx) => (
+                              <div key={job.id || idx} className="bg-slate-900 p-3 rounded-lg border border-slate-850 space-y-1">
+                                <p className="font-bold text-[#2c7df7] uppercase text-[10px]">Empleo anterior #{idx + 1}:</p>
+                                <p><span className="font-bold text-slate-400">Empresa:</span> <span className="text-white font-semibold">{job.companyName}</span></p>
+                                <p><span className="font-bold text-slate-400">Cargo / Posición:</span> <span className="text-white font-semibold">{job.position}</span></p>
+                                <p><span className="font-bold text-slate-400">Supervisor / Jefe:</span> <span className="text-white font-semibold">{job.supervisorName}</span></p>
+                                <p><span className="font-bold text-slate-400">Dirección:</span> <span className="text-white font-semibold">{job.companyAddress || 'N/A'}</span></p>
+                                <p><span className="font-bold text-slate-400">Teléfono:</span> <span className="text-white font-semibold">{job.companyPhone || 'N/A'}</span></p>
+                                <p><span className="font-bold text-slate-400">Fechas:</span> <span className="text-white font-semibold">{job.startDate} a {job.endDate}</span></p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* E. Estudios */}
+                    {/* F. Estudios */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
                       <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
                         <GraduationCap className="w-4 h-4" />
@@ -580,10 +650,10 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                       <div className="text-xs text-slate-400">
                         <p className="mb-2"><span className="font-bold text-slate-400">¿Posee estudios secundarios o profesionales?:</span> <span className="text-white font-bold">{activeExpediente.state.education.hasEducation}</span></p>
                         
-                        {activeExpediente.state.education.hasEducation === 'Si' && activeExpediente.state.education.studies.length > 0 && (
+                        {activeExpediente.state.education.hasEducation === 'Si' && activeExpediente.state.education.studies && activeExpediente.state.education.studies.length > 0 && (
                           <div className="space-y-4 mt-3">
                             {activeExpediente.state.education.studies.map((inst, index) => (
-                              <div key={index} className="bg-slate-900 p-3 rounded-lg border border-slate-850 space-y-1.5">
+                              <div key={inst.id || index} className="bg-slate-900 p-3 rounded-lg border border-slate-850 space-y-1.5">
                                 <p className="font-bold text-white uppercase text-[10px] text-[#2c7df7]">Institución #{index + 1}:</p>
                                 <p><span className="font-bold text-slate-400">Centro Educativo:</span> <span className="text-white font-semibold">{inst.institutionName}</span></p>
                                 <p><span className="font-bold text-slate-400">Título Obtenido / Grado:</span> <span className="text-white font-semibold">{inst.degreeEarned}</span></p>
@@ -598,46 +668,65 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
                       </div>
                     </div>
 
-                    {/* F. Historial de viajes a USA */}
+                    {/* G. Historial de viajes a USA */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
                       <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
                         <Globe className="w-4 h-4" />
                         <span className="text-xs font-black uppercase tracking-wider">Historial de viajes americanos y mundiales</span>
                       </div>
                       <div className="grid md:grid-cols-2 gap-4 text-xs">
-                        <p><span className="text-slate-400 block font-bold">¿Ha viajado a USA antes?:</span> <span className="text-white font-semibold">{activeExpediente.state.usTravelHistory.hasTraveledBefore}</span></p>
-                        {activeExpediente.state.usTravelHistory.hasTraveledBefore === 'Si' && (
+                        <p><span className="text-slate-400 block font-bold">¿Ha viajado a USA antes?:</span> <span className="text-white font-semibold">{activeExpediente.state.usTravelHistory.hasTraveledBefore} {activeExpediente.state.usTravelHistory.hasTraveledBefore === 'Si' && activeExpediente.state.usTravelHistory.previousEntriesCount ? `(Entradas totales: ${activeExpediente.state.usTravelHistory.previousEntriesCount})` : ''}</span></p>
+                        {activeExpediente.state.usTravelHistory.hasTraveledBefore === 'Si' && activeExpediente.state.usTravelHistory.entries && (
                           <div className="md:col-span-2 bg-slate-900 p-3 rounded-xl space-y-2 mt-1">
-                            <span className="font-bold block text-slate-400 text-[10px]">Viajes recientes:</span>
+                            <span className="font-bold block text-slate-400 text-[10px]">Viajes registrados (Detallados):</span>
                             {activeExpediente.state.usTravelHistory.entries.map((entry, idx) => (
                               <p key={idx} className="border-b border-slate-800 pb-1.5 last:border-b-0">
-                                Viaje {idx+1}: <strong className="text-white">{entry.entryDate}</strong> al <strong className="text-white">{entry.exitDate}</strong> ({entry.daysStayed} días estadía)
+                                Viaje {idx+1}: <strong className="text-white">{entry.entryDate}</strong> al <strong className="text-white">{entry.exitDate}</strong> ({entry.daysStayed} días estadía) {entry.cityVisited ? ` - Ciudad: ${entry.cityVisited}` : ''}
                               </p>
                             ))}
                           </div>
                         )}
-                        <p className="md:col-span-2"><span className="text-slate-400 block font-bold">¿Tiene Visa Americana previa?:</span> <span className="text-white font-semibold">{activeExpediente.state.previousVisa.hasPreviousVisa}</span></p>
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">¿Tiene Visa Americana previa?:</span> <span className="text-white font-semibold">{activeExpediente.state.previousVisa.hasPreviousVisa}</span></p>
                         {activeExpediente.state.previousVisa.hasPreviousVisa === 'Si' && (
                           <div className="md:col-span-2 bg-slate-900 p-3 rounded-xl grid md:grid-cols-3 gap-2 mt-1">
-                            <p><span className="text-slate-450 block text-[9px] uppercase font-bold">Número Visa:</span> <strong className="text-white">{activeExpediente.state.previousVisa.visaNumber}</strong></p>
-                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Fecha Emisión:</span> <strong className="text-white">{activeExpediente.state.previousVisa.expeditionDate}</strong></p>
-                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Fecha Expiración:</span> <strong className="text-white">{activeExpediente.state.previousVisa.expirationDate}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Número Visa:</span> <strong className="text-white">{activeExpediente.state.previousVisa.visaNumber || 'N/A'}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Fecha Emisión:</span> <strong className="text-white">{activeExpediente.state.previousVisa.expeditionDate || 'N/A'}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Fecha Expiración:</span> <strong className="text-white">{activeExpediente.state.previousVisa.expirationDate || 'N/A'}</strong></p>
                           </div>
                         )}
-                        <p className="md:col-span-2"><span className="text-slate-400 block font-bold">Otros Países Visitados (Últimos 5 años):</span> <span className="text-white font-semibold">{activeExpediente.state.countriesVisited?.countries || 'Ninguno'}</span></p>
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">¿Negaciones de visa anteriores?:</span> <span className="text-white font-semibold">{activeExpediente.state.previousVisa.hasVisaDenial || 'No'}</span></p>
+                        {activeExpediente.state.previousVisa.hasVisaDenial === 'Si' && (
+                          <div className="md:col-span-2 bg-slate-900 p-3 rounded-xl mt-1 space-y-1">
+                            <p><span className="text-slate-450 text-[9px] uppercase font-bold">Fecha Negación:</span> <strong className="text-white">{activeExpediente.state.previousVisa.denialDate}</strong></p>
+                            <p><span className="text-slate-450 text-[9px] uppercase font-bold">Explicación / Motivo:</span> <span className="text-slate-200 block text-[11px] mt-0.5">{activeExpediente.state.previousVisa.denialReason}</span></p>
+                          </div>
+                        )}
+                        <p className="md:col-span-2 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">Otros Países Visitados (Últimos 5 años):</span> <span className="text-white font-semibold">{activeExpediente.state.countriesVisited?.countries || 'Ninguno'}</span></p>
                       </div>
                     </div>
 
-                    {/* G. Preguntas de seguridad */}
+                    {/* H. Seguridad, Idiomas y Servicio Militar */}
                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
                       <div className="flex items-center gap-2 text-us-blue border-b border-slate-850 pb-2 mb-3">
                         <Shield className="w-4 h-4" />
-                        <span className="text-xs font-black uppercase tracking-wider">Preguntas de Seguridad</span>
+                        <span className="text-xs font-black uppercase tracking-wider">Seguridad, Idiomas y Servicio Militar</span>
                       </div>
                       <div className="grid md:grid-cols-3 gap-4 text-xs">
                         <p><span className="text-slate-400 block font-bold">¿Arrestado?:</span> <span className={activeExpediente.state.securityQuestions?.arrested === 'Si' ? 'text-us-red font-black' : 'text-slate-300 font-bold'}>{activeExpediente.state.securityQuestions?.arrested || 'No'}</span></p>
                         <p><span className="text-slate-400 block font-bold">¿Salud pública?:</span> <span className={activeExpediente.state.securityQuestions?.publicHealthIssues === 'Si' ? 'text-us-red font-black' : 'text-slate-300 font-bold'}>{activeExpediente.state.securityQuestions?.publicHealthIssues || 'No'}</span></p>
                         <p><span className="text-slate-400 block font-bold">¿Infracción de visa?:</span> <span className={activeExpediente.state.securityQuestions?.visaViolation === 'Si' ? 'text-us-red font-black' : 'text-slate-300 font-bold'}>{activeExpediente.state.securityQuestions?.visaViolation || 'No'}</span></p>
+                        
+                        <p className="md:col-span-3 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">Idiomas Hablados:</span> <span className="text-white font-semibold">{activeExpediente.state.securityQuestions?.languagesSpoken || 'No especificados'}</span></p>
+                        
+                        <p className="md:col-span-3 border-t border-slate-900 pt-2"><span className="text-slate-400 block font-bold">¿Tiene Servicio Militar?:</span> <span className="text-white font-semibold">{activeExpediente.state.securityQuestions?.hasMilitaryService || 'No'}</span></p>
+                        {activeExpediente.state.securityQuestions?.hasMilitaryService === 'Si' && (
+                          <div className="md:col-span-3 bg-slate-900 p-3 rounded-xl grid md:grid-cols-2 gap-2 mt-1">
+                            <p><span className="text-slate-450 block text-[9px] uppercase font-bold">Fuerza / Rama:</span> <strong className="text-white">{activeExpediente.state.securityQuestions?.militaryBranch || 'N/A'}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Rango:</span> <strong className="text-white">{activeExpediente.state.securityQuestions?.militaryRank || 'N/A'}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Especialidad:</span> <strong className="text-white">{activeExpediente.state.securityQuestions?.militarySpecialty || 'N/A'}</strong></p>
+                            <p><span className="text-slate-455 block text-[9px] uppercase font-bold">Fechas Servicio:</span> <strong className="text-white">{activeExpediente.state.securityQuestions?.militaryStartDate} a {activeExpediente.state.securityQuestions?.militaryEndDate}</strong></p>
+                          </div>
+                        )}
                       </div>
                     </div>
 

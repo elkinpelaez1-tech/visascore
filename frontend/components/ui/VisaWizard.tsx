@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, ArrowRight, CheckCircle2, FileText, User, MapPin, 
-  Globe, Shield, Calendar, Award, Briefcase, Plus, Trash2, Heart, HeartCrack
+  Globe, Shield, Calendar, Award, Briefcase, Plus, Trash2, Heart, HeartCrack, Globe2
 } from 'lucide-react';
 import { VisaApplicationState, initialFormState, USTravelEntry, PreviousJobEntry, EducationEntry, VisaExpediente } from '../types';
 import { saveExpediente } from '../../services/visaService';
@@ -19,8 +19,8 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
 
   // Handlers for adding/removing multiple records
   const addTravelEntry = () => {
-    if (state.usTravelHistory.entries.length >= 5) return;
-    const newEntry: USTravelEntry = { entryDate: '', exitDate: '', daysStayed: '' };
+    if (state.usTravelHistory.entries.length >= 10) return; // Permite al menos 5 o hasta 10 registros
+    const newEntry: USTravelEntry = { entryDate: '', exitDate: '', daysStayed: '', cityVisited: '' };
     setState(prev => ({
       ...prev,
       usTravelHistory: {
@@ -58,7 +58,9 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
       position: '',
       supervisorName: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      companyAddress: '',
+      companyPhone: ''
     };
     setState(prev => ({
       ...prev,
@@ -141,11 +143,9 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
 
   // Submit Flow
   const handleFinalSubmit = () => {
-    // Generate dinamic case number like VISA-2026-000189
     const suffix = Math.floor(100000 + Math.random() * 900000);
     const id = `VISA-2026-${suffix}`;
     
-    // Create new expediente object
     const newExpediente: VisaExpediente = {
       id,
       submissionDate: new Date().toISOString().split('T')[0],
@@ -156,7 +156,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
         formStatus: 'No iniciado'
       },
       checklist: {
-        infoReceived: true, // Auto marked as we completed the wizard
+        infoReceived: true,
         documentsUploaded: false,
         ds160Created: false,
         ds160Reviewed: false,
@@ -168,36 +168,49 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
       }
     };
 
-    // Save expediente through data service
     saveExpediente(newExpediente).catch(e => {
       console.error('Error saving expediente:', e);
     });
 
     setCaseNumber(id);
-    setCurrentStep(15); // Show success screen
+    setCurrentStep(15); // Success screen
   };
 
   const totalSteps = 14;
   const progressPercent = Math.min(100, Math.round(((currentStep - 1) / totalSteps) * 100));
 
-  // Step Validation & Simple Next Check
+  // Validation
   const canGoNext = () => {
     switch (currentStep) {
       case 1:
-        return state.personalData.fullName && state.personalData.birthDate && state.personalData.birthPlace;
+        if (!state.personalData.fullName || !state.personalData.birthDate || !state.personalData.birthPlace || !state.personalData.nationalIdentityNumber) return false;
+        if (state.personalData.hasOtherNationality === 'Si' && !state.personalData.otherNationalityDetails) return false;
+        return true;
       case 2:
-        return state.addressContact.residenceAddress && state.addressContact.mobilePhone && state.addressContact.email;
+        if (!state.addressContact.residenceAddress || !state.addressContact.residenceCity || !state.addressContact.residenceState || !state.addressContact.mobilePhone || !state.addressContact.email) return false;
+        if (state.addressContact.hasOtherEmail === 'Si' && !state.addressContact.otherEmail) return false;
+        if (state.addressContact.hasSocialMedia === 'Si' && !state.addressContact.socialMediaLink) return false;
+        return true;
       case 3:
-        return state.passportData.passportNumber && state.passportData.expeditionDate && state.passportData.expirationDate;
+        if (!state.passportData.passportNumber || !state.passportData.expeditionDate || !state.passportData.expirationDate) return false;
+        if (state.passportData.hasLostPassport === 'Si' && !state.passportData.lostPassportExplanation) return false;
+        return true;
       case 4:
-        if (!state.travelInfo.tentativeTravelDate) return false;
+        if (state.travelInfo.hasSpecificTravelPlans === 'Si') {
+          if (!state.travelInfo.arrivalDate || !state.travelInfo.departureDate) return false;
+        } else {
+          if (!state.travelInfo.tentativeTravelDate || !state.travelInfo.travelDurationDays) return false;
+        }
         if (state.travelInfo.travelPayer === 'Familiar') {
           return !!(state.travelInfo.payerLastName?.trim() && state.travelInfo.payerFirstName?.trim() && state.travelInfo.payerRelationship);
         }
         return true;
       case 5:
         if (state.usContact.hasContact === '') return false;
-        return !!(state.usContact.name?.trim() && state.usContact.address?.trim() && state.usContact.phone?.trim());
+        if (state.usContact.hasContact === 'No') {
+          return !!(state.usContact.name?.trim() && state.usContact.address?.trim() && state.usContact.phone?.trim());
+        }
+        return !!(state.usContact.name?.trim() && state.usContact.address?.trim() && state.usContact.phone?.trim() && state.usContact.relationship);
       case 6:
         if (state.usTravelHistory.hasTraveledBefore === '') return false;
         if (state.usTravelHistory.hasTraveledBefore === 'Si') {
@@ -207,27 +220,27 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
       case 7:
         if (state.previousVisa.hasPreviousVisa === '') return false;
         if (state.previousVisa.hasPreviousVisa === 'Si') {
-          return state.previousVisa.visaNumber && state.previousVisa.expeditionDate && state.previousVisa.expirationDate;
+          if (!state.previousVisa.visaNumber || !state.previousVisa.expeditionDate || !state.previousVisa.expirationDate) return false;
+        }
+        if (state.previousVisa.hasVisaDenial === '') return false;
+        if (state.previousVisa.hasVisaDenial === 'Si') {
+          return !!(state.previousVisa.denialDate && state.previousVisa.denialReason);
         }
         return true;
       case 8:
-        return state.familyInfo.fatherName && state.familyInfo.motherName;
+        if (!state.familyInfo.fatherName || !state.familyInfo.motherName) return false;
+        if (state.familyInfo.isFatherInUS === 'Si' && !state.familyInfo.fatherUSStatus) return false;
+        if (state.familyInfo.isMotherInUS === 'Si' && !state.familyInfo.motherUSStatus) return false;
+        return true;
       case 9:
         if (state.spouseChildren.civilStatus !== 'Soltero(a)') {
           if (!state.spouseChildren.spouseLastName?.trim() || !state.spouseChildren.spouseFirstName?.trim() || !state.spouseChildren.spouseBirthDate) {
             return false;
           }
-          if (state.spouseChildren.civilStatus === 'Separado(a)' || state.spouseChildren.civilStatus === 'Divorciado(a)') {
-            if (!state.spouseChildren.separationReason?.trim() || !state.spouseChildren.separationDate) {
-              return false;
-            }
-          }
         }
         return state.spouseChildren.hasChildren !== '';
       case 10:
-        if (state.currentJob.workStatus === 'Pensionado') {
-          return true;
-        }
+        if (state.currentJob.workStatus === 'Pensionado') return true;
         return !!(
           state.currentJob.occupation?.trim() &&
           state.currentJob.companyName?.trim() &&
@@ -235,14 +248,12 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
           state.currentJob.workAddress?.trim() &&
           state.currentJob.workPhone?.trim() &&
           state.currentJob.startDate &&
-          state.currentJob.duty1?.trim() &&
-          state.currentJob.duty2?.trim() &&
-          state.currentJob.duty3?.trim()
+          state.currentJob.duty1?.trim()
         );
       case 11:
         if (state.previousJobs.hasPreviousJobs === '') return false;
         if (state.previousJobs.hasPreviousJobs === 'Si') {
-          return state.previousJobs.jobs.length > 0 && state.previousJobs.jobs.every(j => j.companyName && j.position);
+          return state.previousJobs.jobs.length > 0 && state.previousJobs.jobs.every(j => j.companyName && j.position && j.startDate && j.endDate);
         }
         return true;
       case 12:
@@ -251,16 +262,17 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
           return state.education.studies.length > 0 && state.education.studies.every(s => 
             s.institutionName?.trim() && 
             s.degreeEarned?.trim() && 
-            s.institutionAddress?.trim() && 
-            s.institutionCity?.trim() && 
-            s.institutionPhone?.trim() && 
             s.startDate && 
             s.endDate
           );
         }
         return true;
       case 13:
-        return true; // Optional countries visited
+        if (!state.securityQuestions.languagesSpoken) return false;
+        if (state.securityQuestions.hasMilitaryService === 'Si') {
+          return !!(state.securityQuestions.militaryBranch && state.securityQuestions.militaryRank && state.securityQuestions.militarySpecialty && state.securityQuestions.militaryStartDate && state.securityQuestions.militaryEndDate);
+        }
+        return true;
       case 14:
         return true;
       default:
@@ -276,13 +288,13 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
       case 4: return "Información de Viaje";
       case 5: return "Contacto en Estados Unidos";
       case 6: return "Historial de Viajes a USA";
-      case 7: return "Visa Americana Anterior";
+      case 7: return "Visa Americana y Negaciones";
       case 8: return "Información Familiar";
       case 9: return "Cónyuge e Hijos";
       case 10: return "Trabajo Actual";
       case 11: return "Trabajos Anteriores";
       case 12: return "Estudios";
-      case 13: return "Países Visitados";
+      case 13: return "Información Adicional";
       case 14: return "Preguntas de Seguridad";
       default: return "";
     }
@@ -292,15 +304,13 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
     <div className="min-h-screen bg-slate-50 py-10 px-4 md:px-8">
       <div className="max-w-3xl mx-auto">
         
-        {/* Top bar with back button */}
         {currentStep <= 14 && (
           <div className="flex justify-between items-center mb-6">
             <button 
               onClick={onBackToLanding}
               className="flex items-center gap-2 text-slate-500 hover:text-us-blue font-semibold transition-colors"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al Inicio
+              <ArrowLeft className="h-4 w-4" /> Volver al Inicio
             </button>
             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-xs font-bold text-slate-500">
               <span className="w-2 h-2 rounded-full bg-us-red animate-pulse" />
@@ -311,13 +321,11 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
 
         {currentStep <= 14 ? (
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xl p-6 md:p-10 relative overflow-hidden">
-            {/* Top red/blue bars for authentic USA consulate design touches */}
             <div className="absolute top-0 left-0 w-full h-1.5 flex">
               <div className="bg-us-blue w-1/2 h-full" />
               <div className="bg-us-red w-1/2 h-full" />
             </div>
 
-            {/* Header info */}
             <div className="mb-8">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-sm font-bold text-us-blue uppercase tracking-wider">
@@ -327,12 +335,9 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                   Paso {currentStep} de {totalSteps}
                 </span>
               </div>
-              
               <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                 {getStepTitle()}
               </h1>
-
-              {/* Progress Bar Container */}
               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-us-blue to-us-red transition-all duration-300"
@@ -341,7 +346,6 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
               </div>
             </div>
 
-            {/* Form Section Views */}
             <div className="min-h-[300px] mb-8">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -356,12 +360,12 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                   {currentStep === 1 && (
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Nombre completo (Comenzar con Apellidos, luego Nombres, tal cual en pasaporte) *</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Nombre completo (Apellidos y Nombres, tal cual en pasaporte) *</label>
                         <input 
                           type="text" 
                           required
                           placeholder="Ej. Pérez Gómez Juan Carlos"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                           value={state.personalData.fullName}
                           onChange={e => setState({ ...state, personalData: { ...state.personalData, fullName: e.target.value } })}
                         />
@@ -372,7 +376,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           <input 
                             type="date" 
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.personalData.birthDate}
                             onChange={e => setState({ ...state, personalData: { ...state.personalData, birthDate: e.target.value } })}
                           />
@@ -380,13 +384,13 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                         <div>
                           <label className="block text-sm font-bold text-slate-700 mb-2">Género *</label>
                           <select 
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                             value={state.personalData.gender}
                             onChange={e => setState({ ...state, personalData: { ...state.personalData, gender: e.target.value } })}
                           >
                             <option value="Masculino">Masculino</option>
                             <option value="Femenino">Femenino</option>
-                            <option value="Otro">Otro / No binario</option>
+                            <option value="Otro">Otro</option>
                           </select>
                         </div>
                       </div>
@@ -396,8 +400,8 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           <input 
                             type="text" 
                             required
-                            placeholder="Ej. Bogotá, D.C."
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            placeholder="Ej. Bogotá, Cundinamarca"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.personalData.birthPlace}
                             onChange={e => setState({ ...state, personalData: { ...state.personalData, birthPlace: e.target.value } })}
                           />
@@ -408,52 +412,220 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                             type="text" 
                             required
                             placeholder="Ej. Colombia"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.personalData.nationality}
                             onChange={e => setState({ ...state, personalData: { ...state.personalData, nationality: e.target.value } })}
                           />
                         </div>
                       </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Tipo de documento de identidad *</label>
+                          <select 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                            value={state.personalData.nationalIdentityType}
+                            onChange={e => setState({ ...state, personalData: { ...state.personalData, nationalIdentityType: e.target.value } })}
+                          >
+                            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
+                            <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Número de documento *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ingresa el número"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.personalData.nationalIdentityNumber}
+                            onChange={e => setState({ ...state, personalData: { ...state.personalData, nationalIdentityNumber: e.target.value } })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Tiene o ha tenido alguna nacionalidad distinta a la actual? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, personalData: { ...state.personalData, hasOtherNationality: val as any, otherNationalityDetails: val === 'No' ? '' : state.personalData.otherNationalityDetails } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.personalData.hasOtherNationality === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {state.personalData.hasOtherNationality === 'Si' && (
+                          <input 
+                            type="text" 
+                            placeholder="Especifique el país y detalles de la otra nacionalidad"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm animate-fadeIn"
+                            value={state.personalData.otherNationalityDetails}
+                            onChange={e => setState({ ...state, personalData: { ...state.personalData, otherNationalityDetails: e.target.value } })}
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Es usted residente de otro país distinto a su país de nacionalidad actual? *</label>
+                        <div className="flex gap-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, personalData: { ...state.personalData, isResidentOtherCountry: val as any } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.personalData.isResidentOtherCountry === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                     </div>
                   )}
 
                   {/* Step 2: Dirección y Contacto */}
                   {currentStep === 2 && (
                     <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Dirección de residencia completa *</label>
-                        <input 
-                          type="text" 
-                          required
-                          placeholder="Calle, avenida, apto, conjunto, ciudad"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
-                          value={state.addressContact.residenceAddress}
-                          onChange={e => setState({ ...state, addressContact: { ...state.addressContact, residenceAddress: e.target.value } })}
-                        />
-                      </div>
                       <div className="grid md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Dirección de residencia (Calle, Apto, Conjunto) *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Calle 100 # 15-30"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.addressContact.residenceAddress}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, residenceAddress: e.target.value } })}
+                          />
+                        </div>
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono celular *</label>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Ciudad *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Bogotá"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.addressContact.residenceCity}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, residenceCity: e.target.value } })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Departamento / Estado *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Cundinamarca"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.addressContact.residenceState}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, residenceState: e.target.value } })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">País *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Colombia"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.addressContact.residenceCountry}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, residenceCountry: e.target.value } })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono principal *</label>
                           <input 
                             type="tel" 
                             required
                             placeholder="+57 321 000 0000"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.addressContact.mobilePhone}
                             onChange={e => setState({ ...state, addressContact: { ...state.addressContact, mobilePhone: e.target.value } })}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Correo electrónico *</label>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Otro teléfono de contacto (Opcional)</label>
                           <input 
-                            type="email" 
-                            required
-                            placeholder="ejemplo@correo.com"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
-                            value={state.addressContact.email}
-                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, email: e.target.value } })}
+                            type="tel" 
+                            placeholder="+57 601 000 0000"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.addressContact.secondaryPhone}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, secondaryPhone: e.target.value } })}
                           />
                         </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Correo electrónico *</label>
+                        <input 
+                          type="email" 
+                          required
+                          placeholder="ejemplo@correo.com"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm mb-4"
+                          value={state.addressContact.email}
+                          onChange={e => setState({ ...state, addressContact: { ...state.addressContact, email: e.target.value } })}
+                        />
+                        
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Maneja otro correo electrónico? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, addressContact: { ...state.addressContact, hasOtherEmail: val as any, otherEmail: val === 'No' ? '' : state.addressContact.otherEmail } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.addressContact.hasOtherEmail === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {state.addressContact.hasOtherEmail === 'Si' && (
+                          <input 
+                            type="email" 
+                            placeholder="Ingrese su otro correo electrónico"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm animate-fadeIn"
+                            value={state.addressContact.otherEmail}
+                            onChange={e => setState({ ...state, addressContact: { ...state.addressContact, otherEmail: e.target.value } })}
+                          />
+                        )}
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Maneja redes sociales en los últimos 5 años? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, addressContact: { ...state.addressContact, hasSocialMedia: val as any, socialMediaLink: val === 'No' ? '' : state.addressContact.socialMediaLink } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.addressContact.hasSocialMedia === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {state.addressContact.hasSocialMedia === 'Si' && (
+                          <div className="space-y-2 animate-fadeIn">
+                            <span className="block text-xs font-bold text-us-red">
+                              ⚠️ IMPORTANTE: Por favor copia y pega el enlace (link) completo de tu perfil de red social (ej. https://www.facebook.com/tu.usuario), no solamente el nombre de usuario.
+                            </span>
+                            <input 
+                              type="url" 
+                              placeholder="Ej. https://www.instagram.com/tu_usuario"
+                              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                              value={state.addressContact.socialMediaLink}
+                              onChange={e => setState({ ...state, addressContact: { ...state.addressContact, socialMediaLink: e.target.value } })}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -461,16 +633,31 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                   {/* Step 3: Pasaporte */}
                   {currentStep === 3 && (
                     <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Número de pasaporte *</label>
-                        <input 
-                          type="text" 
-                          required
-                          placeholder="Número único con letras/números"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
-                          value={state.passportData.passportNumber}
-                          onChange={e => setState({ ...state, passportData: { ...state.passportData, passportNumber: e.target.value } })}
-                        />
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Tipo de pasaporte *</label>
+                          <select 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                            value={state.passportData.passportType}
+                            onChange={e => setState({ ...state, passportData: { ...state.passportData, passportType: e.target.value } })}
+                          >
+                            <option value="Regular">Regular / Oficial Ordinario</option>
+                            <option value="Oficial">Oficial / Oficial de Servicio</option>
+                            <option value="Diplomático">Diplomático</option>
+                            <option value="Otro">Otro Tipo</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Número de pasaporte *</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ingresa tu número de pasaporte"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.passportData.passportNumber}
+                            onChange={e => setState({ ...state, passportData: { ...state.passportData, passportNumber: e.target.value } })}
+                          />
+                        </div>
                       </div>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
@@ -478,7 +665,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           <input 
                             type="date" 
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.passportData.expeditionDate}
                             onChange={e => setState({ ...state, passportData: { ...state.passportData, expeditionDate: e.target.value } })}
                           />
@@ -488,7 +675,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           <input 
                             type="date" 
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                             value={state.passportData.expirationDate}
                             onChange={e => setState({ ...state, passportData: { ...state.passportData, expirationDate: e.target.value } })}
                           />
@@ -500,10 +687,35 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           type="text" 
                           required
                           placeholder="Colombia"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                           value={state.passportData.issuingCountry}
                           onChange={e => setState({ ...state, passportData: { ...state.passportData, issuingCountry: e.target.value } })}
                         />
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Ha perdido o le han robado su pasaporte alguna vez? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, passportData: { ...state.passportData, hasLostPassport: val as any, lostPassportExplanation: val === 'No' ? '' : state.passportData.lostPassportExplanation } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.passportData.hasLostPassport === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {state.passportData.hasLostPassport === 'Si' && (
+                          <textarea 
+                            rows={3}
+                            placeholder="Explique detalladamente cuándo y cómo perdió o le robaron su pasaporte anterior"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm animate-fadeIn"
+                            value={state.passportData.lostPassportExplanation}
+                            onChange={e => setState({ ...state, passportData: { ...state.passportData, lostPassportExplanation: e.target.value } })}
+                          />
+                        )}
                       </div>
                     </div>
                   )}
@@ -513,87 +725,177 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                     <div className="space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Fecha tentativa de viaje *</label>
-                          <input 
-                            type="date" 
-                            required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
-                            value={state.travelInfo.tentativeTravelDate}
-                            onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, tentativeTravelDate: e.target.value } })}
-                          />
-                        </div>
-                        <div>
                           <label className="block text-sm font-bold text-slate-700 mb-2">Propósito del viaje *</label>
                           <select 
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                             value={state.travelInfo.travelPurpose}
                             onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, travelPurpose: e.target.value } })}
                           >
                             <option value="Turismo (B2)">Turismo / Tratamiento Médico (B2)</option>
                             <option value="Negocios (B1)">Negocios / Conferencias (B1)</option>
+                            <option value="Negocio/Turismo (B1/B2)">Negocios y Turismo Combinados (B1/B2)</option>
                             <option value="Estudios (F1)">Estudios (F1)</option>
-                            <option value="Tránsito (C)">Tránsito directo (C)</option>
                             <option value="Otro">Otro propósito</option>
                           </select>
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Quién pagará los gastos de tu viaje? *</label>
-                        <select 
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                          value={state.travelInfo.travelPayer}
-                          onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, travelPayer: e.target.value } })}
-                        >
-                          <option value="Mismo solicitante">Tú mismo (Mismo solicitante)</option>
-                          <option value="Familiar">Un familiar directo (Padre, Madre, Cónyuge)</option>
-                          <option value="Empresa">Tu empresa / Empleador</option>
-                          <option value="Otra Persona">Otra persona u organización</option>
-                        </select>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">¿Quién pagará los gastos de tu viaje? *</label>
+                          <select 
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                            value={state.travelInfo.travelPayer}
+                            onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, travelPayer: e.target.value } })}
+                          >
+                            <option value="Mismo solicitante">Tú mismo (Mismo solicitante)</option>
+                            <option value="Familiar">Un familiar directo (Padre, Madre, Cónyuge)</option>
+                            <option value="Empresa">Tu empresa / Empleador</option>
+                            <option value="Otra Persona">Otra persona u organización</option>
+                          </select>
+                        </div>
                       </div>
 
                       {state.travelInfo.travelPayer === 'Familiar' && (
-                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6 animate-fadeIn">
+                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 animate-fadeIn">
                           <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Datos del Familiar que Paga</h4>
-                          <div className="grid md:grid-cols-2 gap-6">
+                          <div className="grid md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Apellidos *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-1">Apellidos *</label>
                               <input 
                                 type="text"
-                                required
-                                placeholder="Ej. Pérez Gómez"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                                placeholder="Pérez Gómez"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                                 value={state.travelInfo.payerLastName || ''}
                                 onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, payerLastName: e.target.value } })}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Nombre *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-1">Nombres *</label>
                               <input 
                                 type="text"
-                                required
-                                placeholder="Ej. Juan Carlos"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                                placeholder="Juan Carlos"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                                 value={state.travelInfo.payerFirstName || ''}
                                 onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, payerFirstName: e.target.value } })}
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Parentesco *</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Parentesco *</label>
                             <select 
-                              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                               value={state.travelInfo.payerRelationship || 'Padre'}
                               onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, payerRelationship: e.target.value } })}
                             >
-                              <option value="Padre">Padre</option>
-                              <option value="Madre">Madre</option>
-                              <option value="Hermano">Hermano</option>
+                              <option value="Padre">Padre / Madre</option>
+                              <option value="Hermano">Hermano / Hermana</option>
                               <option value="Cónyuge">Cónyuge</option>
-                              <option value="Otros">Otros</option>
+                              <option value="Otros">Otros Parientes</option>
                             </select>
                           </div>
                         </div>
                       )}
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Ha realizado planes específicos de viaje a EE.UU.? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ 
+                                ...state, 
+                                travelInfo: { 
+                                  ...state.travelInfo, 
+                                  hasSpecificTravelPlans: val as any, 
+                                  arrivalDate: val === 'No' ? '' : state.travelInfo.arrivalDate,
+                                  departureDate: val === 'No' ? '' : state.travelInfo.departureDate,
+                                  tentativeTravelDate: val === 'Si' ? '' : state.travelInfo.tentativeTravelDate
+                                } 
+                              })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.travelInfo.hasSpecificTravelPlans === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+
+                        {state.travelInfo.hasSpecificTravelPlans === 'Si' ? (
+                          <div className="grid md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-fadeIn">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Fecha de llegada a EE.UU. *</label>
+                              <input 
+                                type="date"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.travelInfo.arrivalDate || ''}
+                                onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, arrivalDate: e.target.value } })}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Fecha de salida de EE.UU. *</label>
+                              <input 
+                                type="date"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.travelInfo.departureDate || ''}
+                                onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, departureDate: e.target.value } })}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Días totales de permanencia *</label>
+                              <input 
+                                type="number"
+                                placeholder="Ej. 10"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.travelInfo.travelDurationDays || ''}
+                                onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, travelDurationDays: e.target.value } })}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-fadeIn">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Fecha tentativa de viaje *</label>
+                              <input 
+                                type="date"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.travelInfo.tentativeTravelDate}
+                                onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, tentativeTravelDate: e.target.value } })}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Días estimados de permanencia *</label>
+                              <input 
+                                type="number"
+                                placeholder="Ej. 15"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.travelInfo.travelDurationDays || ''}
+                                onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, travelDurationDays: e.target.value } })}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono del lugar de hospedaje en EE.UU. *</label>
+                          <input 
+                            type="tel"
+                            placeholder="Ej. +1 305-000-0000"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.travelInfo.accommodationPhone || ''}
+                            onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, accommodationPhone: e.target.value } })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Correo electrónico del hospedaje (Opcional)</label>
+                          <input 
+                            type="email"
+                            placeholder="Ej. hotel@correo.com"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                            value={state.travelInfo.accommodationEmail || ''}
+                            onChange={e => setState({ ...state, travelInfo: { ...state.travelInfo, accommodationEmail: e.target.value } })}
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -611,20 +913,19 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                               key={opt.value}
                               type="button"
                               onClick={() => {
-                                if (state.usContact.hasContact !== opt.value) {
-                                  setState({ 
-                                    ...state, 
-                                    usContact: { 
-                                      hasContact: opt.value as 'Si' | 'No',
-                                      name: '',
-                                      address: '',
-                                      phone: '',
-                                      email: '',
-                                      relationship: 'Familiar',
-                                      legalStatus: 'Ciudadano'
-                                    } 
-                                  });
-                                }
+                                setState({ 
+                                  ...state, 
+                                  usContact: { 
+                                    hasContact: opt.value as 'Si' | 'No',
+                                    name: '',
+                                    address: '',
+                                    phone: '',
+                                    email: '',
+                                    relationship: 'Familiar',
+                                    legalStatus: 'Ciudadano',
+                                    organizationName: ''
+                                  } 
+                                });
                               }}
                               className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
                                 state.usContact.hasContact === opt.value 
@@ -678,17 +979,30 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
 
                       {state.usContact.hasContact === 'Si' && (
                         <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6 animate-fadeIn">
-                          <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Detalles del Contacto en USA</h4>
+                          <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Detalles del Contacto / Institución en USA</h4>
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Nombre Completo del Contacto / Institución *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-2">Nombre de la persona que lo conoce *</label>
                               <input 
                                 type="text"
+                                placeholder="Ingresa nombre de contacto"
                                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
                                 value={state.usContact.name || ''}
                                 onChange={e => setState({ ...state, usContact: { ...state.usContact, name: e.target.value } })}
                               />
                             </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2">Nombre de la organización (Opcional)</label>
+                              <input 
+                                type="text"
+                                placeholder="Ej. Universidad o Empresa"
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                                value={state.usContact.organizationName || ''}
+                                onChange={e => setState({ ...state, usContact: { ...state.usContact, organizationName: e.target.value } })}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-xs font-bold text-slate-600 mb-2">Relación con usted *</label>
                               <select 
@@ -697,10 +1011,23 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                                 onChange={e => setState({ ...state, usContact: { ...state.usContact, relationship: e.target.value } })}
                               >
                                 <option value="Familiar">Familiar</option>
-                                <option value="Amigo">Amigo</option>
-                                <option value="Socio de negocios">Socio de negocios</option>
+                                <option value="Amigo">Amigo / Conocido</option>
+                                <option value="Socio de negocios">Socio de negocios / Empleador</option>
                                 <option value="Representante de escuela">Representante de escuela / Universidad</option>
                                 <option value="Otro">Otro</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2">Estatus legal en USA</label>
+                              <select 
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                                value={state.usContact.legalStatus || 'Ciudadano'}
+                                onChange={e => setState({ ...state, usContact: { ...state.usContact, legalStatus: e.target.value } })}
+                              >
+                                <option value="Ciudadano">Ciudadano Americano</option>
+                                <option value="Residente">Residente Legal (Green Card)</option>
+                                <option value="No Inmigrante">No Inmigrante (Visa de estudio/trabajo)</option>
+                                <option value="Otro">Otro / No Aplica</option>
                               </select>
                             </div>
                           </div>
@@ -713,9 +1040,9 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                               onChange={e => setState({ ...state, usContact: { ...state.usContact, address: e.target.value } })}
                             />
                           </div>
-                          <div className="grid md:grid-cols-3 gap-6">
+                          <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Teléfono *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-2">Teléfono de contacto *</label>
                               <input 
                                 type="tel"
                                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
@@ -732,30 +1059,17 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                                 onChange={e => setState({ ...state, usContact: { ...state.usContact, email: e.target.value } })}
                               />
                             </div>
-                            <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Estatus legal en USA</label>
-                              <select 
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                                value={state.usContact.legalStatus || 'Ciudadano'}
-                                onChange={e => setState({ ...state, usContact: { ...state.usContact, legalStatus: e.target.value } })}
-                              >
-                                <option value="Ciudadano">Ciudadano Americano</option>
-                                <option value="Residente">Residente Legal (Green Card)</option>
-                                <option value="No Inmigrante">No Inmigrante (Visa de estudio/trabajo)</option>
-                                <option value="Otro">Otro / Empresa</option>
-                              </select>
-                            </div>
                           </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Step 6: Historial de Viajes a USA */}
+                  {/* Step 6: Historial de Viajes a USA (Repetible dinámico) */}
                   {currentStep === 6 && (
                     <div className="space-y-6">
                       <div>
-                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Ha viajado anteriormente a los Estados Unidos? *</span>
+                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Ha estado o viajado anteriormente a los Estados Unidos? *</span>
                         <div className="flex gap-4">
                           {[
                             { value: 'No', label: 'No (Soy primerizo)' },
@@ -766,11 +1080,11 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                               type="button"
                               onClick={() => {
                                 const newEntries = opt.value === 'Si' && state.usTravelHistory.entries.length === 0 
-                                  ? [{ entryDate: '', exitDate: '', daysStayed: '' }] 
+                                  ? [{ entryDate: '', exitDate: '', daysStayed: '', cityVisited: '' }] 
                                   : state.usTravelHistory.entries;
                                 setState({ 
                                   ...state, 
-                                  usTravelHistory: { hasTraveledBefore: opt.value as 'Si' | 'No', entries: newEntries } 
+                                  usTravelHistory: { ...state.usTravelHistory, hasTraveledBefore: opt.value as any, entries: newEntries } 
                                 });
                               }}
                               className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
@@ -787,183 +1101,340 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
 
                       {state.usTravelHistory.hasTraveledBefore === 'Si' && (
                         <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6">
-                          <div className="flex justify-between items-center">
-                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Últimos viajes a USA (Máximo 5)</h4>
-                            {state.usTravelHistory.entries.length < 5 && (
-                              <button
-                                type="button"
-                                onClick={addTravelEntry}
-                                className="flex items-center gap-1.5 bg-us-blue hover:bg-blue-900 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm"
-                              >
-                                <Plus className="w-3.5 h-3.5" /> Agregar Entrada
-                              </button>
-                            )}
+                          <div className="grid md:grid-cols-2 gap-4 pb-4 border-b border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">¿Cuántas entradas totales ha tenido a EE.UU.? *</label>
+                              <input 
+                                type="number"
+                                placeholder="Ej. 3"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                value={state.usTravelHistory.previousEntriesCount || ''}
+                                onChange={e => setState({ ...state, usTravelHistory: { ...state.usTravelHistory, previousEntriesCount: e.target.value } })}
+                              />
+                            </div>
                           </div>
 
-                          {state.usTravelHistory.entries.map((entry, idx) => (
-                            <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 relative">
-                              {state.usTravelHistory.entries.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeTravelEntry(idx)}
-                                  className="absolute top-2 right-2 text-slate-400 hover:text-us-red"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                              <p className="text-xs font-bold text-slate-400 mb-3 uppercase">Entrada #{idx + 1}</p>
-                              <div className="grid md:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de ingreso *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-us-blue text-sm"
-                                    value={entry.entryDate}
-                                    onChange={e => updateTravelEntry(idx, 'entryDate', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de salida *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-us-blue text-sm"
-                                    value={entry.exitDate}
-                                    onChange={e => updateTravelEntry(idx, 'exitDate', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Permanencia (En días) *</label>
-                                  <input 
-                                    type="number"
-                                    placeholder="Ej. 15"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-us-blue text-sm"
-                                    value={entry.daysStayed}
-                                    onChange={e => updateTravelEntry(idx, 'daysStayed', e.target.value)}
-                                  />
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Registros de Viajes (Mínimo 5 permitidos)</h4>
+                            <button
+                              type="button"
+                              onClick={addTravelEntry}
+                              className="flex items-center gap-1.5 bg-us-blue hover:bg-blue-900 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Agregar Viaje
+                            </button>
+                          </div>
+
+                          <div className="space-y-4">
+                            {state.usTravelHistory.entries.map((entry, index) => (
+                              <div key={index} className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm relative space-y-3">
+                                {state.usTravelHistory.entries.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeTravelEntry(index)}
+                                    className="absolute top-3 right-3 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <span className="block text-xs font-bold text-slate-400 uppercase">Viaje #{index + 1}</span>
+                                
+                                <div className="grid md:grid-cols-4 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha Ingreso *</label>
+                                    <input 
+                                      type="date"
+                                      required
+                                      className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs bg-white"
+                                      value={entry.entryDate}
+                                      onChange={e => updateTravelEntry(index, 'entryDate', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha Salida *</label>
+                                    <input 
+                                      type="date"
+                                      required
+                                      className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs bg-white"
+                                      value={entry.exitDate}
+                                      onChange={e => updateTravelEntry(index, 'exitDate', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Días Permanencia *</label>
+                                    <input 
+                                      type="number"
+                                      required
+                                      placeholder="Ej. 12"
+                                      className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs bg-white"
+                                      value={entry.daysStayed}
+                                      onChange={e => updateTravelEntry(index, 'daysStayed', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Ciudad Visitada (Opcional)</label>
+                                    <input 
+                                      type="text"
+                                      placeholder="Ej. Miami"
+                                      className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs bg-white"
+                                      value={entry.cityVisited || ''}
+                                      onChange={e => updateTravelEntry(index, 'cityVisited', e.target.value)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Step 7: Visa Americana Anterior */}
+                  {/* Step 7: Visa Americana y Negaciones */}
                   {currentStep === 7 && (
                     <div className="space-y-6">
                       <div>
-                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Ha tenido visa americana anteriormente? *</span>
-                        <div className="flex gap-4">
-                          {[
-                            { value: 'No', label: 'No' },
-                            { value: 'Si', label: 'Sí' }
-                          ].map(opt => (
+                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Alguna vez le han emitido una visa americana? *</span>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
                             <button
-                              key={opt.value}
+                              key={val}
                               type="button"
-                              onClick={() => setState({ ...state, previousVisa: { ...state.previousVisa, hasPreviousVisa: opt.value as 'Si' | 'No' } })}
-                              className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
-                                state.previousVisa.hasPreviousVisa === opt.value 
-                                ? 'border-us-blue bg-blue-50/50 text-us-blue' 
-                                : 'border-slate-250 bg-white text-slate-600 hover:bg-slate-50'
-                              }`}
+                              onClick={() => setState({ 
+                                ...state, 
+                                previousVisa: { 
+                                  ...state.previousVisa, 
+                                  hasPreviousVisa: val as any, 
+                                  visaNumber: val === 'No' ? '' : state.previousVisa.visaNumber,
+                                  expeditionDate: val === 'No' ? '' : state.previousVisa.expeditionDate,
+                                  expirationDate: val === 'No' ? '' : state.previousVisa.expirationDate
+                                } 
+                              })}
+                              className={`flex-1 py-3 px-4 rounded-xl border text-center transition font-bold text-sm ${state.previousVisa.hasPreviousVisa === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
                             >
-                              {opt.label}
+                              {val}
                             </button>
                           ))}
                         </div>
+
+                        {state.previousVisa.hasPreviousVisa === 'Si' && (
+                          <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 animate-fadeIn">
+                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Detalles de la Visa Anterior</h4>
+                            <div className="grid md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Número de Visa *</label>
+                                <input 
+                                  type="text"
+                                  placeholder="Ej. 12345678"
+                                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                  value={state.previousVisa.visaNumber || ''}
+                                  onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, visaNumber: e.target.value } })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Fecha Expedición *</label>
+                                <input 
+                                  type="date"
+                                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                  value={state.previousVisa.expeditionDate || ''}
+                                  onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, expeditionDate: e.target.value } })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Fecha Vencimiento *</label>
+                                <input 
+                                  type="date"
+                                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                  value={state.previousVisa.expirationDate || ''}
+                                  onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, expirationDate: e.target.value } })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {state.previousVisa.hasPreviousVisa === 'Si' && (
-                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6">
-                          <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Detalles de la Visa Anterior</h4>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-2">Número de Visa (8 dígitos rojos en la parte inferior derecha) *</label>
-                            <input 
-                              type="text"
-                              placeholder="Ej. 12345678"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                              value={state.previousVisa.visaNumber || ''}
-                              onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, visaNumber: e.target.value } })}
-                            />
-                          </div>
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Fecha de expedición *</label>
-                              <input 
-                                type="date"
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                                value={state.previousVisa.expeditionDate || ''}
-                                onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, expeditionDate: e.target.value } })}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Fecha de vencimiento o expiración *</label>
-                              <input 
-                                type="date"
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                                value={state.previousVisa.expirationDate || ''}
-                                onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, expirationDate: e.target.value } })}
-                              />
-                            </div>
-                          </div>
+                      <div className="pt-4 border-t border-slate-100">
+                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Le han negado una visa americana alguna vez? *</span>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ 
+                                ...state, 
+                                previousVisa: { 
+                                  ...state.previousVisa, 
+                                  hasVisaDenial: val as any, 
+                                  denialDate: val === 'No' ? '' : state.previousVisa.denialDate,
+                                  denialReason: val === 'No' ? '' : state.previousVisa.denialReason
+                                } 
+                              })}
+                              className={`flex-1 py-3 px-4 rounded-xl border text-center transition font-bold text-sm ${state.previousVisa.hasVisaDenial === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
                         </div>
-                      )}
+
+                        {state.previousVisa.hasVisaDenial === 'Si' && (
+                          <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 animate-fadeIn">
+                            <h4 className="font-bold text-us-red text-sm uppercase tracking-wide">Detalles de la Negación</h4>
+                            <div className="grid md:grid-cols-3 gap-4">
+                              <div className="md:col-span-1">
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de la Negación *</label>
+                                <input 
+                                  type="date"
+                                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                  value={state.previousVisa.denialDate || ''}
+                                  onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, denialDate: e.target.value } })}
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Motivo / Explicación *</label>
+                                <input 
+                                  type="text"
+                                  placeholder="Ej. Falta de arraigo económico"
+                                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                                  value={state.previousVisa.denialReason || ''}
+                                  onChange={e => setState({ ...state, previousVisa: { ...state.previousVisa, denialReason: e.target.value } })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
                   {/* Step 8: Información Familiar */}
                   {currentStep === 8 && (
                     <div className="space-y-6">
-                      <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200">
-                        <h4 className="font-bold text-slate-800 text-sm mb-4 uppercase tracking-wider">Información del Padre</h4>
-                        <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                        <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Información del Padre</h4>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre completo del padre *</label>
+                          <input 
+                            type="text"
+                            placeholder="Nombre del Padre"
+                            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                            value={state.familyInfo.fatherName}
+                            onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, fatherName: e.target.value } })}
+                          />
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Nombre Completo *</label>
-                            <input 
-                              type="text"
-                              placeholder="Nombre y Apellidos"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                              value={state.familyInfo.fatherName}
-                              onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, fatherName: e.target.value } })}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de nacimiento</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Fecha de nacimiento (Padre)</label>
                             <input 
                               type="date"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                              value={state.familyInfo.fatherBirthDate}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                              value={state.familyInfo.fatherBirthDate || ''}
                               onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, fatherBirthDate: e.target.value } })}
                             />
                           </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5">¿Su padre está en EE.UU.?</label>
+                            <select 
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                              value={state.familyInfo.isFatherInUS || 'No'}
+                              onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, isFatherInUS: e.target.value as any } })}
+                            >
+                              <option value="No">No</option>
+                              <option value="Si">Sí</option>
+                            </select>
+                          </div>
+                          {state.familyInfo.isFatherInUS === 'Si' && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Estatus legal en EE.UU.</label>
+                              <select 
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                                value={state.familyInfo.fatherUSStatus || 'Ciudadano'}
+                                onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, fatherUSStatus: e.target.value } })}
+                              >
+                                <option value="Ciudadano">Ciudadano Americano</option>
+                                <option value="Residente">Residente Legal (Green Card)</option>
+                                <option value="No Inmigrante">No Inmigrante (Visa)</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200">
-                        <h4 className="font-bold text-slate-800 text-sm mb-4 uppercase tracking-wider">Información de la Madre</h4>
-                        <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                        <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Información de la Madre</h4>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre completo de la madre *</label>
+                          <input 
+                            type="text"
+                            placeholder="Nombre de la Madre"
+                            className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                            value={state.familyInfo.motherName}
+                            onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, motherName: e.target.value } })}
+                          />
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Nombre Completo *</label>
-                            <input 
-                              type="text"
-                              placeholder="Nombre y Apellidos de Soltera"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                              value={state.familyInfo.motherName}
-                              onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, motherName: e.target.value } })}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de nacimiento</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Fecha de nacimiento (Madre)</label>
                             <input 
                               type="date"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
-                              value={state.familyInfo.motherBirthDate}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                              value={state.familyInfo.motherBirthDate || ''}
                               onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, motherBirthDate: e.target.value } })}
                             />
                           </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5">¿Su madre está en EE.UU.?</label>
+                            <select 
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                              value={state.familyInfo.isMotherInUS || 'No'}
+                              onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, isMotherInUS: e.target.value as any } })}
+                            >
+                              <option value="No">No</option>
+                              <option value="Si">Sí</option>
+                            </select>
+                          </div>
+                          {state.familyInfo.isMotherInUS === 'Si' && (
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-1.5">Estatus legal en EE.UU.</label>
+                              <select 
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-us-blue bg-white text-xs"
+                                value={state.familyInfo.motherUSStatus || 'Ciudadano'}
+                                onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, motherUSStatus: e.target.value } })}
+                              >
+                                <option value="Ciudadano">Ciudadano Americano</option>
+                                <option value="Residente">Residente Legal (Green Card)</option>
+                                <option value="No Inmigrante">No Inmigrante (Visa)</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Tiene otros parientes directos en los Estados Unidos? (Hijos, hermanos, tíos) *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ ...state, familyInfo: { ...state.familyInfo, hasOtherRelativesInUS: val as any, otherRelativesDetails: val === 'No' ? '' : state.familyInfo.otherRelativesDetails } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.familyInfo.hasOtherRelativesInUS === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        {state.familyInfo.hasOtherRelativesInUS === 'Si' && (
+                          <textarea 
+                            rows={3}
+                            placeholder="Especifique parentesco, nombres completos y estatus migratorio (Ej. Tío, Juan Pérez, Residente)"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm animate-fadeIn"
+                            value={state.familyInfo.otherRelativesDetails}
+                            onChange={e => setState({ ...state, familyInfo: { ...state.familyInfo, otherRelativesDetails: e.target.value } })}
+                          />
+                        )}
                       </div>
                     </div>
                   )}
@@ -973,66 +1444,53 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                     <div className="space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Estado civil o Marital *</label>
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Estado civil *</label>
                           <select 
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                             value={state.spouseChildren.civilStatus}
                             onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, civilStatus: e.target.value } })}
                           >
                             <option value="Soltero(a)">Soltero(a)</option>
                             <option value="Casado(a)">Casado(a)</option>
+                            <option value="Unión Libre">Unión Libre</option>
                             <option value="Separado(a)">Separado(a)</option>
                             <option value="Divorciado(a)">Divorciado(a)</option>
                             <option value="Viudo(a)">Viudo(a)</option>
-                            <option value="Unión Libre">Unión Libre / Conviviente</option>
                           </select>
                         </div>
                       </div>
 
                       {state.spouseChildren.civilStatus !== 'Soltero(a)' && (
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-6 animate-fadeIn">
-                          <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
-                            {state.spouseChildren.civilStatus === 'Separado(a)' || state.spouseChildren.civilStatus === 'Divorciado(a)'
-                              ? 'Datos de Ex-Cónyuge *'
-                              : state.spouseChildren.civilStatus === 'Viudo(a)'
-                              ? 'Datos de Cónyuge Fallecido/a *'
-                              : state.spouseChildren.civilStatus === 'Unión Libre'
-                              ? 'Datos de Conviviente / Pareja *'
-                              : 'Datos de Cónyuge *'}
-                          </h4>
-                          
+                        <div className="p-6 bg-slate-50 border border-slate-200 rounded-3xl space-y-6 animate-fadeIn">
+                          <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Datos del Cónyuge / Pareja</h4>
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Apellidos *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-1">Apellidos *</label>
                               <input 
                                 type="text"
-                                required
                                 placeholder="Ej. Pérez Gómez"
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm font-semibold text-slate-900"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                                 value={state.spouseChildren.spouseLastName || ''}
                                 onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, spouseLastName: e.target.value } })}
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Nombre *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-1">Nombres *</label>
                               <input 
                                 type="text"
-                                required
-                                placeholder="Ej. Juan Carlos"
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm font-semibold text-slate-900"
+                                placeholder="Ej. Adriana María"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                                 value={state.spouseChildren.spouseFirstName || ''}
                                 onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, spouseFirstName: e.target.value } })}
                               />
                             </div>
                           </div>
-
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-xs font-bold text-slate-600 mb-2">Fecha de nacimiento *</label>
+                              <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de nacimiento *</label>
                               <input 
                                 type="date"
-                                required
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm font-semibold text-slate-900"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
                                 value={state.spouseChildren.spouseBirthDate || ''}
                                 onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, spouseBirthDate: e.target.value } })}
                               />
@@ -1040,28 +1498,26 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                           </div>
 
                           {(state.spouseChildren.civilStatus === 'Separado(a)' || state.spouseChildren.civilStatus === 'Divorciado(a)') && (
-                            <div className="pt-4 border-t border-slate-200 space-y-6">
-                              <h5 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Detalles de la Separación / Divorcio</h5>
+                            <div className="pt-4 border-t border-slate-200 space-y-4">
+                              <h5 className="text-xs font-bold text-us-red uppercase">Detalles de la Separación / Divorcio</h5>
                               <div className="grid md:grid-cols-2 gap-6">
                                 <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-2">Motivo de separación *</label>
+                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de separación/divorcio *</label>
                                   <input 
-                                    type="text"
-                                    required
-                                    placeholder="Ej. Divorcio de mutuo acuerdo, separación de hecho"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm font-semibold text-slate-900"
-                                    value={state.spouseChildren.separationReason || ''}
-                                    onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, separationReason: e.target.value } })}
+                                    type="date"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none bg-white text-sm"
+                                    value={state.spouseChildren.separationDate || ''}
+                                    onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, separationDate: e.target.value } })}
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-2">Fecha de separación *</label>
+                                  <label className="block text-xs font-bold text-slate-600 mb-1">Motivo / Explicación *</label>
                                   <input 
-                                    type="date"
-                                    required
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm font-semibold text-slate-900"
-                                    value={state.spouseChildren.separationDate || ''}
-                                    onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, separationDate: e.target.value } })}
+                                    type="text"
+                                    placeholder="Ej. Incompatibilidad de caracteres"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none bg-white text-sm"
+                                    value={state.spouseChildren.separationReason || ''}
+                                    onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, separationReason: e.target.value } })}
                                   />
                                 </div>
                               </div>
@@ -1070,41 +1526,33 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                         </div>
                       )}
 
-                      <div>
-                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Tiene hijos? *</span>
-                        <div className="flex gap-4">
-                          {[
-                            { value: 'No', label: 'No' },
-                            { value: 'Si', label: 'Sí generé descendientes' }
-                          ].map(opt => (
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Tiene hijos? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
                             <button
-                              key={opt.value}
+                              key={val}
                               type="button"
-                              onClick={() => setState({ ...state, spouseChildren: { ...state.spouseChildren, hasChildren: opt.value as 'Si' | 'No' } })}
-                              className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
-                                state.spouseChildren.hasChildren === opt.value 
-                                ? 'border-us-blue bg-blue-50/50 text-us-blue' 
-                                : 'border-slate-250 bg-white text-slate-600 hover:bg-slate-50'
-                              }`}
+                              onClick={() => setState({ ...state, spouseChildren: { ...state.spouseChildren, hasChildren: val as any, childrenCount: val === 'No' ? 0 : state.spouseChildren.childrenCount } })}
+                              className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.spouseChildren.hasChildren === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
                             >
-                              {opt.label}
+                              {val}
                             </button>
                           ))}
                         </div>
+                        {state.spouseChildren.hasChildren === 'Si' && (
+                          <div className="animate-fadeIn">
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Cantidad de hijos *</label>
+                            <input 
+                              type="number"
+                              placeholder="Ej. 2"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm bg-white"
+                              value={state.spouseChildren.childrenCount || ''}
+                              onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, childrenCount: Number(e.target.value) } })}
+                            />
+                          </div>
+                        )}
                       </div>
-
-                      {state.spouseChildren.hasChildren === 'Si' && (
-                        <div className="p-4 bg-slate-100 rounded-2xl">
-                          <label className="block text-xs font-bold text-slate-600 mb-1">Número de hijos *</label>
-                          <input 
-                            type="number"
-                            min="1"
-                            className="w-32 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-us-blue text-sm"
-                            value={state.spouseChildren.childrenCount || 1}
-                            onChange={e => setState({ ...state, spouseChildren: { ...state.spouseChildren, childrenCount: parseInt(e.target.value) || 0 } })}
-                          />
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -1112,151 +1560,108 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                   {currentStep === 10 && (
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-3">Situación Laboral Actual *</label>
-                        <div className="flex gap-4">
-                          {[
-                            { value: 'Trabajando', label: 'Trabajo actualmente / Independiente' },
-                            { value: 'Pensionado', label: 'Pensionado / Jubilado' }
-                          ].map(opt => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setState({ 
-                                ...state, 
-                                currentJob: { 
-                                  ...state.currentJob, 
-                                  workStatus: opt.value as 'Trabajando' | 'Pensionado'
-                                } 
-                              })}
-                              className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
-                                state.currentJob.workStatus === opt.value 
-                                ? 'border-us-blue bg-blue-50/50 text-us-blue' 
-                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Estado laboral actual *</label>
+                        <select 
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue bg-white text-sm"
+                          value={state.currentJob.workStatus}
+                          onChange={e => setState({ ...state, currentJob: { ...state.currentJob, workStatus: e.target.value as any } })}
+                        >
+                          <option value="Trabajando">Trabajando / Empleado / Independiente</option>
+                          <option value="Pensionado">Pensionado / Jubilado</option>
+                        </select>
                       </div>
-
-                      {state.currentJob.workStatus === 'Pensionado' && (
-                        <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-3xl space-y-3 animate-fadeIn">
-                          <p className="text-sm font-semibold text-us-blue">退休 / Pensionado</p>
-                          <p className="text-sm text-slate-600">
-                            Usted ha seleccionado su estado laboral actual como <strong>Pensionado / Jubilado</strong>. En este estado civil, la información de empleo activo no es requerida para el formulario oficial. Puede continuar al siguiente paso de forma segura.
-                          </p>
-                        </div>
-                      )}
 
                       {state.currentJob.workStatus === 'Trabajando' && (
                         <div className="space-y-6 animate-fadeIn">
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Ocupación / Oficio actual *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Profesión u Ocupación *</label>
                               <input 
                                 type="text"
-                                placeholder="Ej. Ingeniero, Profesor, Independiente"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                placeholder="Ej. Gerente de Ventas"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.occupation}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, occupation: e.target.value } })}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la Empresa o Institución *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la Empresa o Negocio *</label>
                               <input 
                                 type="text"
-                                placeholder="Ej. Google Colombia / Trabajador Independiente"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                placeholder="Ej. Tecnología Global S.A.S."
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.companyName}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, companyName: e.target.value } })}
                               />
                             </div>
                           </div>
-
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Salario mensual estimado (Pesos o Moneda Local) *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Ingresos mensuales aproximados (COP) *</label>
                               <input 
                                 type="text"
-                                placeholder="Ej. $4.500.000 COP"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                placeholder="Ej. 7.800.000 COP"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.monthlySalary}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, monthlySalary: e.target.value } })}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de ingreso a laborar *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de inicio en este empleo *</label>
                               <input 
                                 type="date"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.startDate}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, startDate: e.target.value } })}
                               />
                             </div>
                           </div>
-
                           <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Dirección del Trabajo *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Dirección física del trabajo *</label>
                               <input 
                                 type="text"
-                                placeholder="Dirección Física"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                placeholder="Ej. Calle 100 # 19-50, Bogotá"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.workAddress}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, workAddress: e.target.value } })}
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono de Oficina / Trabajo *</label>
+                              <label className="block text-sm font-bold text-slate-700 mb-2">Teléfono de la empresa *</label>
                               <input 
                                 type="tel"
-                                placeholder="Número con indicativo"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
+                                placeholder="Ej. 6013445566"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                                 value={state.currentJob.workPhone}
                                 onChange={e => setState({ ...state, currentJob: { ...state.currentJob, workPhone: e.target.value } })}
                               />
                             </div>
                           </div>
-
-                          <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                            <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Principales funciones que desempeña *</h4>
-                            <p className="text-xs text-slate-500 mb-2">Describa de forma clara al menos 3 funciones claves que realiza en su puesto laboral:</p>
-                            
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Función #1 *</label>
-                                <input 
-                                  type="text"
-                                  required
-                                  placeholder="Ej. Supervisión y control de inventario de mercancía"
-                                  className="w-full px-4 py-2 px-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
-                                  value={state.currentJob.duty1 || ''}
-                                  onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty1: e.target.value } })}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Función #2 *</label>
-                                <input 
-                                  type="text"
-                                  required
-                                  placeholder="Ej. Elaboración y presentación de reportes financieros mensuales"
-                                  className="w-full px-4 py-2 px-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
-                                  value={state.currentJob.duty2 || ''}
-                                  onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty2: e.target.value } })}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Función #3 *</label>
-                                <input 
-                                  type="text"
-                                  required
-                                  placeholder="Ej. Coordinación de relaciones con proveedores locales"
-                                  className="w-full px-4 py-2 px-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm font-semibold text-slate-900 bg-white"
-                                  value={state.currentJob.duty3 || ''}
-                                  onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty3: e.target.value } })}
-                                />
-                              </div>
+                          <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Describa sus funciones principales (Mínimo 1 función) *</label>
+                            <div className="space-y-3">
+                              <input 
+                                type="text"
+                                placeholder="Función 1: Supervisión de equipo comercial"
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+                                value={state.currentJob.duty1}
+                                onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty1: e.target.value } })}
+                              />
+                              <input 
+                                type="text"
+                                placeholder="Función 2 (Opcional)"
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+                                value={state.currentJob.duty2}
+                                onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty2: e.target.value } })}
+                              />
+                              <input 
+                                type="text"
+                                placeholder="Función 3 (Opcional)"
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+                                value={state.currentJob.duty3}
+                                onChange={e => setState({ ...state, currentJob: { ...state.currentJob, duty3: e.target.value } })}
+                              />
                             </div>
                           </div>
                         </div>
@@ -1264,44 +1669,34 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                     </div>
                   )}
 
-                  {/* Step 11: Trabajos Anteriores */}
+                  {/* Step 11: Trabajos Anteriores (Repetible dinámico) */}
                   {currentStep === 11 && (
                     <div className="space-y-6">
                       <div>
-                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Ha tenido empleos anteriores en los últimos 5 años? *</span>
+                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Ha estado empleado anteriormente en los últimos 5 años? *</span>
                         <div className="flex gap-4">
-                          {[
-                            { value: 'No', label: 'No' },
-                            { value: 'Si', label: 'Sí (He tenido otros empleos)' }
-                          ].map(opt => (
+                          {['Si', 'No'].map(val => (
                             <button
-                              key={opt.value}
+                              key={val}
                               type="button"
                               onClick={() => {
-                                const newJobs = opt.value === 'Si' && state.previousJobs.jobs.length === 0
-                                  ? [{ id: Math.random().toString(), companyName: '', position: '', supervisorName: '', startDate: '', endDate: '' }]
+                                const newJobs = val === 'Si' && state.previousJobs.jobs.length === 0
+                                  ? [{ id: Math.random().toString(), companyName: '', position: '', supervisorName: '', startDate: '', endDate: '', companyAddress: '', companyPhone: '' }]
                                   : state.previousJobs.jobs;
-                                setState({ 
-                                  ...state, 
-                                  previousJobs: { hasPreviousJobs: opt.value as 'Si' | 'No', jobs: newJobs } 
-                                });
+                                setState({ ...state, previousJobs: { hasPreviousJobs: val as any, jobs: newJobs } });
                               }}
-                              className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
-                                state.previousJobs.hasPreviousJobs === opt.value 
-                                ? 'border-us-blue bg-blue-50/50 text-us-blue' 
-                                : 'border-slate-250 bg-white text-slate-600 hover:bg-slate-50'
-                              }`}
+                              className={`flex-1 py-3 px-4 rounded-xl border text-center transition font-bold text-sm ${state.previousJobs.hasPreviousJobs === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
                             >
-                              {opt.label}
+                              {val}
                             </button>
                           ))}
                         </div>
                       </div>
 
                       {state.previousJobs.hasPreviousJobs === 'Si' && (
-                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6">
+                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6 animate-fadeIn">
                           <div className="flex justify-between items-center">
-                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Empleos anteriores</h4>
+                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide font-heading">Historial de Empleos Anteriores</h4>
                             <button
                               type="button"
                               onClick={addJobEntry}
@@ -1311,123 +1706,125 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                             </button>
                           </div>
 
-                          {state.previousJobs.jobs.map((job, idx) => (
-                            <div key={job.id} className="bg-white p-4 rounded-2xl border border-slate-200 relative space-y-4">
-                              {state.previousJobs.jobs.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeJobEntry(job.id)}
-                                  className="absolute top-2 right-2 text-slate-400 hover:text-us-red"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                              <p className="text-xs font-bold text-slate-400 uppercase">Empleo #{idx + 1}</p>
-                              
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Nombre de la Empresa *</label>
-                                  <input 
-                                    type="text"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue"
-                                    value={job.companyName}
-                                    onChange={e => updateJobEntry(job.id, 'companyName', e.target.value)}
-                                  />
+                          <div className="space-y-4">
+                            {state.previousJobs.jobs.map((job, index) => (
+                              <div key={job.id} className="p-4 bg-white rounded-2xl border border-slate-200 relative space-y-3 shadow-sm">
+                                {state.previousJobs.jobs.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeJobEntry(job.id)}
+                                    className="absolute top-3 right-3 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <span className="block text-xs font-bold text-slate-400 uppercase">Empleo Anterior #{index + 1}</span>
+                                
+                                <div className="grid md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Nombre de la Empresa *</label>
+                                    <input 
+                                      type="text" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.companyName}
+                                      onChange={e => updateJobEntry(job.id, 'companyName', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Cargo *</label>
+                                    <input 
+                                      type="text" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.position}
+                                      onChange={e => updateJobEntry(job.id, 'position', e.target.value)}
+                                    />
+                                  </div>
                                 </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Cargo / Puesto *</label>
-                                  <input 
-                                    type="text"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue"
-                                    value={job.position}
-                                    onChange={e => updateJobEntry(job.id, 'position', e.target.value)}
-                                  />
+                                <div className="grid md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Dirección de la empresa *</label>
+                                    <input 
+                                      type="text" placeholder="Ej. Calle 50 # 10-20, Cali"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.companyAddress || ''}
+                                      onChange={e => updateJobEntry(job.id, 'companyAddress', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Teléfono de la empresa *</label>
+                                    <input 
+                                      type="tel" placeholder="Ej. 6023221100"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.companyPhone || ''}
+                                      onChange={e => updateJobEntry(job.id, 'companyPhone', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Jefe inmediato *</label>
+                                    <input 
+                                      type="text" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.supervisorName}
+                                      onChange={e => updateJobEntry(job.id, 'supervisorName', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Inicio *</label>
+                                    <input 
+                                      type="date" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.startDate}
+                                      onChange={e => updateJobEntry(job.id, 'startDate', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Retiro *</label>
+                                    <input 
+                                      type="date" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={job.endDate}
+                                      onChange={e => updateJobEntry(job.id, 'endDate', e.target.value)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-
-                              <div className="grid md:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Nombre de supervisor</label>
-                                  <input 
-                                    type="text"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue"
-                                    value={job.supervisorName}
-                                    onChange={e => updateJobEntry(job.id, 'supervisorName', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de Inicio *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue"
-                                    value={job.startDate}
-                                    onChange={e => updateJobEntry(job.id, 'startDate', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de Fin *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue"
-                                    value={job.endDate}
-                                    onChange={e => updateJobEntry(job.id, 'endDate', e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Step 12: Estudios */}
+                  {/* Step 12: Estudios (Repetible dinámico) */}
                   {currentStep === 12 && (
                     <div className="space-y-6">
                       <div>
-                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Tiene estudios secundarios u otros estudios profesionales/técnicos? *</span>
+                        <span className="block text-sm font-bold text-slate-700 mb-4">¿Tiene estudios secundarios, técnicos o universitarios? *</span>
                         <div className="flex gap-4">
-                          {[
-                            { value: 'No', label: 'No' },
-                            { value: 'Si', label: 'Sí (Bachillerato, universidad, tecnológico etc.)' }
-                          ].map(opt => (
+                          {['Si', 'No'].map(val => (
                             <button
-                              key={opt.value}
+                              key={val}
                               type="button"
                               onClick={() => {
-                                const newStudies = opt.value === 'Si' && state.education.studies.length === 0
-                                  ? [{ 
-                                      id: Math.random().toString(), 
-                                      institutionName: '', 
-                                      degreeEarned: '', 
-                                      startDate: '', 
-                                      endDate: '',
-                                      institutionAddress: '',
-                                      institutionCity: '',
-                                      institutionPhone: ''
-                                    }]
+                                const newStudies = val === 'Si' && state.education.studies.length === 0
+                                  ? [{ id: Math.random().toString(), institutionName: '', degreeEarned: '', startDate: '', endDate: '', institutionAddress: '', institutionCity: '', institutionPhone: '' }]
                                   : state.education.studies;
-                                setState({ 
-                                  ...state, 
-                                  education: { hasEducation: opt.value as 'Si' | 'No', studies: newStudies } 
-                                });
+                                setState({ ...state, education: { hasEducation: val as any, studies: newStudies } });
                               }}
-                              className={`flex-1 py-4 px-6 rounded-2xl border text-left transition-all font-bold ${
-                                state.education.hasEducation === opt.value 
-                                ? 'border-us-blue bg-blue-50/50 text-us-blue' 
-                                : 'border-slate-250 bg-white text-slate-600 hover:bg-slate-50'
-                              }`}
+                              className={`flex-1 py-3 px-4 rounded-xl border text-center transition font-bold text-sm ${state.education.hasEducation === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
                             >
-                              {opt.label}
+                              {val}
                             </button>
                           ))}
                         </div>
                       </div>
 
                       {state.education.hasEducation === 'Si' && (
-                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6">
+                        <div className="p-6 bg-slate-100 rounded-3xl border border-slate-200 space-y-6 animate-fadeIn">
                           <div className="flex justify-between items-center">
-                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide">Instituciones académicas</h4>
+                            <h4 className="font-bold text-us-blue text-sm uppercase tracking-wide font-heading">Historial Académico</h4>
                             <button
                               type="button"
                               onClick={addEducationEntry}
@@ -1437,114 +1834,207 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                             </button>
                           </div>
 
-                          {state.education.studies.map((study, idx) => (
-                            <div key={study.id} className="bg-white p-4 rounded-2xl border border-slate-200 relative space-y-4">
-                              {state.education.studies.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeEducationEntry(study.id)}
-                                  className="absolute top-2 right-2 text-slate-400 hover:text-us-red"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                              <p className="text-xs font-bold text-slate-400 uppercase">Institución #{idx + 1}</p>
-
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Nombre de Institución *</label>
-                                  <input 
-                                    type="text"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.institutionName}
-                                    onChange={e => updateEducationEntry(study.id, 'institutionName', e.target.value)}
-                                  />
+                          <div className="space-y-4">
+                            {state.education.studies.map((study, index) => (
+                              <div key={study.id} className="p-4 bg-white rounded-2xl border border-slate-200 relative space-y-3 shadow-sm">
+                                {state.education.studies.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeEducationEntry(study.id)}
+                                    className="absolute top-3 right-3 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <span className="block text-xs font-bold text-slate-400 uppercase">Institución #{index + 1}</span>
+                                
+                                <div className="grid md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Nombre de la Institución *</label>
+                                    <input 
+                                      type="text" required
+                                      placeholder="Ej. Universidad Nacional"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.institutionName}
+                                      onChange={e => updateEducationEntry(study.id, 'institutionName', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Título obtenido / Grado *</label>
+                                    <input 
+                                      type="text" required
+                                      placeholder="Ej. Ingeniero o Bachiller"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.degreeEarned}
+                                      onChange={e => updateEducationEntry(study.id, 'degreeEarned', e.target.value)}
+                                    />
+                                  </div>
                                 </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Título / Programas de Grado *</label>
-                                  <input 
-                                    type="text"
-                                    placeholder="Ej. Bachiller / Ingeniero de Sistemas"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.degreeEarned}
-                                    onChange={e => updateEducationEntry(study.id, 'degreeEarned', e.target.value)}
-                                  />
+                                <div className="grid md:grid-cols-3 gap-3">
+                                  <div className="md:col-span-2">
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Dirección de Sede *</label>
+                                    <input 
+                                      type="text"
+                                      placeholder="Ej. Carrera 45 # 26-85"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.institutionAddress || ''}
+                                      onChange={e => updateEducationEntry(study.id, 'institutionAddress', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Ciudad de Sede *</label>
+                                    <input 
+                                      type="text"
+                                      placeholder="Ej. Bogotá"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.institutionCity || ''}
+                                      onChange={e => updateEducationEntry(study.id, 'institutionCity', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Teléfono Contacto *</label>
+                                    <input 
+                                      type="tel"
+                                      placeholder="Ej. 6013165000"
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.institutionPhone || ''}
+                                      onChange={e => updateEducationEntry(study.id, 'institutionPhone', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Inicio *</label>
+                                    <input 
+                                      type="date" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.startDate}
+                                      onChange={e => updateEducationEntry(study.id, 'startDate', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Retiro/Terminación *</label>
+                                    <input 
+                                      type="date" required
+                                      className="w-full px-3 py-2 rounded border border-slate-200 text-xs bg-white"
+                                      value={study.endDate}
+                                      onChange={e => updateEducationEntry(study.id, 'endDate', e.target.value)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-
-                              <div className="grid md:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Dirección de la Institución *</label>
-                                  <input 
-                                    type="text"
-                                    placeholder="Ej. Calle 10 # 5-20"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.institutionAddress || ''}
-                                    onChange={e => updateEducationEntry(study.id, 'institutionAddress', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Ciudad *</label>
-                                  <input 
-                                    type="text"
-                                    placeholder="Ej. Medellín"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.institutionCity || ''}
-                                    onChange={e => updateEducationEntry(study.id, 'institutionCity', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Teléfono de la Institución *</label>
-                                  <input 
-                                    type="tel"
-                                    placeholder="Ej. 6043334455"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.institutionPhone || ''}
-                                    onChange={e => updateEducationEntry(study.id, 'institutionPhone', e.target.value)}
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de Inicio *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.startDate}
-                                    onChange={e => updateEducationEntry(study.id, 'startDate', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-bold text-slate-600 mb-1">Fecha de Fin / Graduación *</label>
-                                  <input 
-                                    type="date"
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-us-blue font-semibold text-slate-900 bg-white"
-                                    value={study.endDate}
-                                    onChange={e => updateEducationEntry(study.id, 'endDate', e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Step 13: Países Visitados */}
+                  {/* Step 13: Información Adicional */}
                   {currentStep === 13 && (
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Países visitados en los últimos 5 años</label>
-                        <p className="text-xs text-slate-500 mb-3">Escriba una lista de los países que ha visitado de vacaciones o negocios separados por comas. Deje en blanco si no ha viajado fuera de su país.</p>
-                        <textarea 
-                          placeholder="Ej. México, España, Panamá, Canadá"
-                          rows={4}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue"
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Países que ha visitado en los últimos 5 años *</label>
+                        <input 
+                          type="text"
+                          placeholder="Ej. México, España, Panamá (Separados por comas)"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
                           value={state.countriesVisited.countries}
                           onChange={e => setState({ ...state, countriesVisited: { countries: e.target.value } })}
                         />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Qué idiomas habla? *</label>
+                        <input 
+                          type="text"
+                          placeholder="Ej. Español, Inglés, Francés"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-us-blue text-sm"
+                          value={state.securityQuestions.languagesSpoken}
+                          onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, languagesSpoken: e.target.value } })}
+                        />
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">¿Ha prestado servicio militar o pertenecido a alguna fuerza de defensa? *</label>
+                        <div className="flex gap-4 mb-4">
+                          {['Si', 'No'].map(val => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setState({ 
+                                ...state, 
+                                securityQuestions: { 
+                                  ...state.securityQuestions, 
+                                  hasMilitaryService: val as any,
+                                  militaryBranch: val === 'No' ? '' : state.securityQuestions.militaryBranch,
+                                  militaryRank: val === 'No' ? '' : state.securityQuestions.militaryRank,
+                                  militarySpecialty: val === 'No' ? '' : state.securityQuestions.militarySpecialty,
+                                  militaryStartDate: val === 'No' ? '' : state.securityQuestions.militaryStartDate,
+                                  militaryEndDate: val === 'No' ? '' : state.securityQuestions.militaryEndDate
+                                } 
+                              })}
+                              className={`flex-1 py-2.5 px-4 rounded-xl border text-center transition font-bold text-sm ${state.securityQuestions.hasMilitaryService === val ? 'border-us-blue bg-blue-50/50 text-us-blue' : 'border-slate-200 bg-white text-slate-600'}`}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+
+                        {state.securityQuestions.hasMilitaryService === 'Si' && (
+                          <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 animate-fadeIn">
+                            <h4 className="font-bold text-us-blue text-xs uppercase tracking-wide">Datos del Servicio Militar</h4>
+                            <div className="grid md:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Rama del Servicio *</label>
+                                <input 
+                                  type="text" placeholder="Ej. Ejército"
+                                  className="w-full px-3 py-2 rounded border border-slate-250 bg-white text-xs"
+                                  value={state.securityQuestions.militaryBranch || ''}
+                                  onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, militaryBranch: e.target.value } })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Rango *</label>
+                                <input 
+                                  type="text" placeholder="Ej. Subteniente"
+                                  className="w-full px-3 py-2 rounded border border-slate-250 bg-white text-xs"
+                                  value={state.securityQuestions.militaryRank || ''}
+                                  onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, militaryRank: e.target.value } })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Especialidad militar *</label>
+                                  <input 
+                                  type="text" placeholder="Ej. Infantería"
+                                  className="w-full px-3 py-2 rounded border border-slate-250 bg-white text-xs"
+                                  value={state.securityQuestions.militarySpecialty || ''}
+                                  onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, militarySpecialty: e.target.value } })}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Inicio *</label>
+                                <input 
+                                  type="date"
+                                  className="w-full px-3 py-2 rounded border border-slate-250 bg-white text-xs"
+                                  value={state.securityQuestions.militaryStartDate || ''}
+                                  onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, militaryStartDate: e.target.value } })}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Fecha de Retiro *</label>
+                                <input 
+                                  type="date"
+                                  className="w-full px-3 py-2 rounded border border-slate-250 bg-white text-xs"
+                                  value={state.securityQuestions.militaryEndDate || ''}
+                                  onChange={e => setState({ ...state, securityQuestions: { ...state.securityQuestions, militaryEndDate: e.target.value } })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1552,47 +2042,25 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
                   {/* Step 14: Preguntas de Seguridad */}
                   {currentStep === 14 && (
                     <div className="space-y-6">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-red-50 text-us-red p-3 rounded-xl border border-red-100 flex items-center gap-2">
-                        <Shield className="w-4 h-4" /> Preguntas obligatorias de seguridad nacional DS-160
-                      </p>
-
-                      {[
-                        {
-                          key: 'arrested',
-                          label: '¿Ha sido arrestado o condenado por algún delito o crimen en el pasado?'
-                        },
-                        {
-                          key: 'publicHealthIssues',
-                          label: '¿Tiene alguna enfermedad transmisible de importancia para la salud pública?'
-                        },
-                        {
-                          key: 'visaViolation',
-                          label: '¿Ha violado alguna vez los términos de una visa estadounidense, trabajado ilegalmente o sobrepasado el tiempo de permanencia?'
-                        }
-                      ].map(q => (
-                        <div key={q.key} className="p-5 bg-slate-50 rounded-2xl border border-slate-200/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          <p className="text-sm font-semibold text-slate-800 leading-relaxed md:max-w-[70%]">
-                            {q.label}
-                          </p>
-                          <div className="flex gap-2 w-full md:w-auto">
-                            {['No', 'Si'].map(ans => (
+                      {([
+                        { key: 'arrested', label: '¿Ha sido arrestado o condenado por algún delito o crimen en cualquier lugar?' },
+                        { key: 'publicHealthIssues', label: '¿Tiene alguna enfermedad contagiosa de importancia para la salud pública?' },
+                        { key: 'visaViolation', label: '¿Ha violado alguna vez los términos de una visa estadounidense o ha sido deportado?' }
+                      ] as { key: 'arrested' | 'publicHealthIssues' | 'visaViolation'; label: string }[]).map((item) => (
+                        <div key={item.key} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                          <label className="block text-sm font-bold text-slate-700 leading-snug">{item.label}</label>
+                          <div className="flex gap-4">
+                            {['No', 'Si'].map(val => (
                               <button
-                                key={ans}
+                                key={val}
                                 type="button"
-                                onClick={() => setState({
-                                  ...state,
-                                  securityQuestions: {
-                                    ...state.securityQuestions,
-                                    [q.key]: ans as 'Si' | 'No'
-                                  }
+                                onClick={() => setState({ 
+                                  ...state, 
+                                  securityQuestions: { ...state.securityQuestions, [item.key]: val as any } 
                                 })}
-                                className={`flex-1 md:flex-initial py-2 px-8 rounded-xl font-bold border transition-all text-sm ${
-                                  state.securityQuestions[q.key as keyof typeof state.securityQuestions] === ans
-                                  ? ans === 'No' ? 'bg-green-100 border-green-300 text-green-700' : 'bg-red-100 border-red-300 text-red-700'
-                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                                }`}
+                                className={`flex-1 py-2 px-4 rounded-xl border text-center transition font-bold text-sm ${state.securityQuestions[item.key] === val ? 'border-us-red bg-red-50/50 text-us-red' : 'border-slate-200 bg-white text-slate-600'}`}
                               >
-                                {ans}
+                                {val}
                               </button>
                             ))}
                           </div>
@@ -1651,7 +2119,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
           </div>
         ) : (
           
-          /* Step 15: PÁGINA FINAL (SOLICITUD RECIBIDA) */
+          /* Success Screen */
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1666,7 +2134,7 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 font-heading">
               Solicitud recibida correctamente
             </h1>
 
