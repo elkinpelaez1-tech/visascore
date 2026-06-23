@@ -1,0 +1,5 @@
+{
+  "name": "VisaScore - Probabilidad Real de Visa Americana",
+  "description": "Analiza tu perfil con base en criterios del formulario DS-160 y estima tu probabilidad real de aprobación de visa americana.",
+  "requestFramePermissions": []
+}

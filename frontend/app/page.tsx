@@ -431,7 +431,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-                Por solo <span className="text-[#002868]">$50.000 COP</span> obtienes:
+                Con el trámite ontienes <span className="text-[#002868]"></span>:
               </h2>
               <p className="text-gray-600 text-lg font-medium tracking-wide">Todo en minutos. Sin adivinar. Sin riesgos.</p>
             </div>
@@ -758,16 +758,10 @@ export default function LandingPage() {
                 No pierdas más de <span className="text-[#CC0000]">$800.000 COP</span> por aplicar a ciegas.
               </h2>
               <p className="text-xl md:text-2xl text-blue-100 mb-12 font-medium">
-                Evalúa tu perfil hoy por solo <span className="text-white font-black">$50.000</span> y aumenta tus probabilidades reales.
+                Evalúa tu perfil hoy <span className="text-white font-black"></span> y aumenta tus probabilidades reales.
               </p>
 
-              <Link
-                href="/test"
-                className="inline-flex h-20 items-center justify-center rounded-2xl bg-[#FF9900] px-16 text-2xl font-black text-white shadow-[0_20px_40px_-10px_rgba(255,153,0,0.5)] hover:bg-[#E68A00] hover:scale-105 transition-all w-full sm:w-auto"
-                onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
-              >
-                Empezar mi evaluación ahora →
-              </Link>
+              
             </div>
           </div>
           <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #FF9900 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
