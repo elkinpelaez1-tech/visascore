@@ -305,16 +305,16 @@ export default function LandingPage() {
               ))}
             </div>
 
-            <div className="bg-blue-50 border border-blue-100 p-8 rounded-3xl text-center max-w-3xl mx-auto">
-              <p className="text-base md:text-lg text-[#002868] font-bold mb-5">
-                Conoce tu probabilidad real antes de invertir. Evalúa tu perfil con VisaScore.
+            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-3xl mx-auto text-center sm:text-left">
+              <p className="text-base font-bold text-slate-700">
+                Nosotros te ayudamos a preparar correctamente tu caso para asegurar una postulación impecable.
               </p>
               <Link
                 href="/test"
-                className="inline-flex items-center gap-2 bg-[#002868] hover:bg-blue-900 text-white font-extrabold uppercase px-8 py-3.5 rounded-full shadow-lg hover:-translate-y-0.5 transition-all text-sm"
+                className="inline-flex items-center gap-2 bg-[#002868] hover:bg-blue-900 text-white font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full shadow-lg whitespace-nowrap hover:-translate-y-0.5 transition-all"
                 onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
               >
-                Calcular mi VisaScore <ArrowRight size={16} />
+                COMENZAR CON MI ASESOR <ArrowRight size={16} />
               </Link>
             </div>
           </div>
