@@ -77,12 +77,12 @@ export default function LandingPage() {
             >
               Calcular VisaScore
             </button>
-            <button
-              onClick={() => scrollToSection('para-asesores')}
+            <Link
+              href="/portal-asesores"
               className="hidden sm:inline-flex items-center gap-1.5 font-bold text-[#CC0000] bg-red-50 hover:bg-rose-100 border border-red-200 px-4 py-2 rounded-full transition-all text-xs"
             >
               <Shield className="w-3.5 h-3.5" /> Acceso Asesores
-            </button>
+            </Link>
             <Link
               href="/tramite-visa"
               className="text-xs md:text-sm font-bold bg-[#002868] hover:bg-blue-900 text-white px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"

@@ -1,10 +1,11 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, ArrowRight, CheckCircle2, FileText, User, MapPin, 
   Globe, Shield, Calendar, Award, Briefcase, Plus, Trash2, Heart, HeartCrack
 } from 'lucide-react';
 import { VisaApplicationState, initialFormState, USTravelEntry, PreviousJobEntry, EducationEntry, VisaExpediente } from '../types';
+import { saveExpediente } from '../../services/visaService';
 
 interface VisaWizardProps {
   onBackToLanding: () => void;
@@ -167,15 +168,10 @@ export default function VisaWizard({ onBackToLanding, logoUrl }: VisaWizardProps
       }
     };
 
-    // Save to localStorage
-    try {
-      const existing = localStorage.getItem('visa_expedientes');
-      const list: VisaExpediente[] = existing ? JSON.parse(existing) : [];
-      list.unshift(newExpediente);
-      localStorage.setItem('visa_expedientes', JSON.stringify(list));
-    } catch (e) {
-      console.error('Error saving to localStorage:', e);
-    }
+    // Save expediente through data service
+    saveExpediente(newExpediente).catch(e => {
+      console.error('Error saving expediente:', e);
+    });
 
     setCaseNumber(id);
     setCurrentStep(15); // Show success screen
