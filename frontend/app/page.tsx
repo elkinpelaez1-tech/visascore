@@ -431,7 +431,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-                Con el trámite ontienes <span className="text-[#002868]"></span>:
+                Con el trámite obtienes <span className="text-[#002868]"></span>:
               </h2>
               <p className="text-gray-600 text-lg font-medium tracking-wide">Todo en minutos. Sin adivinar. Sin riesgos.</p>
             </div>
@@ -456,13 +456,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-16 text-center">
-              <Link
-                href="/test"
-                className="inline-flex h-14 items-center justify-center rounded-2xl bg-[#FF9900] px-10 text-lg font-bold text-white shadow-lg hover:bg-[#E68A00] transition-all"
-                onClick={() => { if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') (window as any).gtag('event', 'begin_test'); }}
-              >
-                Empezar mi evaluación ahora
-              </Link>
+              
             </div>
           </div>
         </section>
