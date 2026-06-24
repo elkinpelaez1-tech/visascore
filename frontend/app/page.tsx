@@ -62,11 +62,19 @@ export default function LandingPage() {
       ═══════════════════════════════════════════════════════ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="focus:outline-none transition-transform hover:scale-105">
+          <Link href="/" className="focus:outline-none transition-transform hover:scale-105 flex items-center gap-2 md:gap-3">
             <img
               src="/VisaScore Transparente.png"
               alt="VisaScore Logo"
               className="h-8 md:h-10 w-auto object-contain"
+            />
+            <span className="text-slate-400 text-[10px] md:text-xs font-semibold border-l border-slate-200 pl-2 md:pl-3">
+              de Central de Reservas y Turismo
+            </span>
+            <img
+              src="/logo-agencia.png"
+              alt="Central de Reservas y Turismo Logo"
+              className="h-8 md:h-10 w-auto object-contain rounded-full border border-slate-100 shadow-sm"
             />
           </Link>
 
@@ -77,12 +85,6 @@ export default function LandingPage() {
             >
               Calcular VisaScore
             </button>
-            <Link
-              href="/portal-asesores"
-              className="hidden sm:inline-flex items-center gap-1.5 font-bold text-[#CC0000] bg-red-50 hover:bg-rose-100 border border-red-200 px-4 py-2 rounded-full transition-all text-xs"
-            >
-              <Shield className="w-3.5 h-3.5" /> Acceso Asesores
-            </Link>
             <Link
               href="/tramite-visa"
               className="text-xs md:text-sm font-bold bg-[#002868] hover:bg-blue-900 text-white px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
@@ -803,11 +805,17 @@ export default function LandingPage() {
           </div>
 
           {/* Links de navegación originales — se mantienen */}
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-bold text-slate-500 mb-8">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-bold text-slate-500 mb-8 items-center">
             <Link className="hover:text-white transition-colors" href="/quienes-somos">Quiénes Somos</Link>
             <Link className="hover:text-white transition-colors" href="/faq">Preguntas</Link>
             <Link className="hover:text-white transition-colors" href="/terminos">Términos</Link>
             <Link className="hover:text-white transition-colors" href="/privacidad">Privacidad</Link>
+            <Link 
+              href="/portal-asesores"
+              className="inline-flex items-center gap-1 font-bold text-red-500 hover:text-red-400 bg-red-950/20 hover:bg-red-950/40 border border-red-900/50 px-3 py-1 rounded-full transition-all text-xs"
+            >
+              <Shield className="w-3 h-3" /> Acceso Asesores
+            </Link>
           </div>
 
           {/* Links legales que abren el LegalModal */}
