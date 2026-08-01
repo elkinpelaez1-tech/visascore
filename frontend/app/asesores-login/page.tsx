@@ -4,15 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert, ShieldCheck, Lock, Mail, ArrowRight, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { ADVISOR_AUTH_CONFIG } from "../../config/auth";
-
-// Native SHA-256 hashing using browser Web Crypto API
-async function computeSHA256(message: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
+import { supabase } from "../../services/supabaseClient";
 
 export default function AsesoresLoginPage() {
   const [username, setUsername] = useState("");
@@ -28,17 +20,17 @@ export default function AsesoresLoginPage() {
     setIsLoading(true);
 
     try {
-      const inputHash = await computeSHA256(password);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: username.trim(),
+        password: password
+      });
 
-      if (
-        username.trim().toLowerCase() === ADVISOR_AUTH_CONFIG.username.toLowerCase() &&
-        inputHash === ADVISOR_AUTH_CONFIG.passwordHash
-      ) {
+      if (signInError || !data.user) {
+        setError("Usuario o contraseña incorrectos.");
+      } else {
         // Authentication success
         localStorage.setItem("asesores_session", "true");
         router.push("/portal-asesores");
-      } else {
-        setError("Usuario o contraseña incorrectos.");
       }
     } catch (err) {
       console.error("Login verification failed:", err);

@@ -49,7 +49,22 @@ export default function PortalAsesoresPage() {
     );
   }
 
+  const handleLogout = async () => {
+    localStorage.removeItem("asesores_session");
+    // Also sign out from Supabase Auth just in case
+    try {
+      const { supabase } = await import("../../services/supabaseClient");
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Error signing out from Supabase:", e);
+    }
+    router.push("/asesores-login");
+  };
+
   return (
-    <AdvisorDashboard onBackToLanding={() => router.push("/")} />
+    <AdvisorDashboard 
+      onBackToLanding={() => router.push("/")} 
+      onLogout={handleLogout}
+    />
   );
 }

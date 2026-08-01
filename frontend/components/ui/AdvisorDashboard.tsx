@@ -9,9 +9,10 @@ import { getExpedientes, updateExpediente, deleteExpediente, resetExpedientes } 
 
 interface AdvisorDashboardProps {
   onBackToLanding: () => void;
+  onLogout?: () => void;
 }
 
-export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardProps) {
+export default function AdvisorDashboard({ onBackToLanding, onLogout }: AdvisorDashboardProps) {
   const [expedientes, setExpedientes] = useState<VisaExpediente[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,6 +171,14 @@ export default function AdvisorDashboard({ onBackToLanding }: AdvisorDashboardPr
           </div>
 
           <div className="flex items-center gap-3 self-end sm:self-auto">
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="px-4 py-2 bg-us-red hover:bg-red-800 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center gap-1 border border-red-700"
+              >
+                Cerrar Sesión
+              </button>
+            )}
             <button
               onClick={handleResetToMocks}
               title="Restaurar de fábrica / Cargar demos"
